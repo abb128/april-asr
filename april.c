@@ -88,6 +88,9 @@ struct AprilASRModel_i {
 
     OrtValue *logits;
 
+    int active_tokens[64];
+    int active_token_head;
+
     bool hc_swap;
 };
 
@@ -110,6 +113,8 @@ AprilASRModel aam_create_model(const char *model_dir) {
     assert(aam->env != NULL);
 
     ORT_ABORT_ON_ERROR(g_ort->CreateSessionOptions(&aam->session_options));
+    ORT_ABORT_ON_ERROR(g_ort->SetIntraOpNumThreads(aam->session_options, 1));
+    ORT_ABORT_ON_ERROR(g_ort->SetInterOpNumThreads(aam->session_options, 1));
 
     // TODO later later: maybe combine everything into one nice big file
     ORTCHAR_T model_path[1024];
@@ -188,6 +193,7 @@ AprilASRModel aam_create_model(const char *model_dir) {
     aam->projected_decoder_out = NULL;
     aam->projected_encoder_out = NULL;
     aam->logits = NULL;
+    aam->active_token_head = 0;
 
 
 
@@ -349,8 +355,8 @@ void aam_feed_pcm16(AprilASRModel aam, short *pcm16, size_t short_count) {
             }
 
             //printf("decoder loop start\n");
-            for(int i=0; i<2; i++){
-                if(i > 10){
+            for(int i=0; i<8; i++){
+                if(i > 6){
                     printf("\nUnreasonably high token output!\n");
                     break;
                 }
@@ -435,6 +441,8 @@ void aam_feed_pcm16(AprilASRModel aam, short *pcm16, size_t short_count) {
                     float *logits;
                     ORT_ABORT_ON_ERROR(g_ort->GetTensorMutableData(aam->logits, &logits));
 
+                    //logits[0] -= 5.0f;
+
                     int max_idx = -1;
                     float max_val = -9999999.0;
                     for(int i=0; i<500; i++){
@@ -446,7 +454,17 @@ void aam_feed_pcm16(AprilASRModel aam, short *pcm16, size_t short_count) {
 
                     //printf("Max idx %d with %.2f\n", max_idx, max_val);
                     if(max_idx != 0) {
-                        printf("%s ", tokens[max_idx]);
+                        //printf("%s ", tokens[max_idx]);
+                        aam->active_tokens[aam->active_token_head] = max_idx;
+                        aam->active_token_head++;
+
+                        for(int m=0; m<aam->active_token_head; m++){
+                            printf("%s", tokens[aam->active_tokens[m]]);
+                        }
+                        printf("\n");
+                        if(aam->active_token_head > 16){
+                            aam->active_token_head = 0;
+                        }
 
                         aam->decoder_context[0] = aam->decoder_context[1];
                         aam->decoder_context[1] = (int64_t)max_idx;

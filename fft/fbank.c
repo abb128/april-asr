@@ -55,8 +55,6 @@ void generate_banks(float *bins_mat, int num_bins, int num_fft_bins, int padded_
             float freq = fft_bin_width * (float)j;
             float mel = (float)mel_scale((double)freq);
             
-            //printf("freq %.2f, mel %.2f,  %.2f %.2f %.2f\n", freq, mel, left_mel, center_mel, right_mel);
-
             float weight = 0.0f;
             if((mel > left_mel) && (mel < right_mel)) {
                 if(mel <= center_mel){
@@ -109,7 +107,6 @@ OnlineFBank make_fbank(FBankOptions opts) {
     generate_povey_window(fbank->window, fbank->padded_window_size);
 
     fbank->mel_bins = (float*)calloc(fbank->num_fft_bins * opts.num_bins, sizeof(float));
-    memset(fbank->mel_bins, 0, fbank->num_fft_bins * opts.num_bins * sizeof(float));
     generate_banks(fbank->mel_bins, opts.num_bins, fbank->num_fft_bins,
         fbank->padded_window_size, opts.sample_freq, opts.mel_low, opts.mel_high);
     
@@ -173,15 +170,22 @@ void fbank_accept_waveform(OnlineFBank fbank, float *wave, size_t wave_count) {
         rptr[1] = 0.0;
 
         float *out = &fbank->temp_segments[fbank->temp_segment_head * fbank->opts.num_bins];
-        memset(out, 0, fbank->opts.num_bins * sizeof(float));
-        
-        for(int mel=0; mel<fbank->opts.num_bins; mel++){
-            for(int fft=0; fft<fbank->num_fft_bins; fft++){
-                float real = (float)(rptr[fft * 2]);
-                float imaginary = (float)(rptr[fft * 2 + 1]);
 
-                out[mel] += (real * real + imaginary * imaginary) * fbank->mel_bins[mel * fbank->num_fft_bins + fft];
+        for(int fft=0; fft<fbank->num_fft_bins; fft++){
+            float real = (float)(rptr[fft * 2]);
+            float imaginary = (float)(rptr[fft * 2 + 1]);
+
+            data[fft] = real * real + imaginary * imaginary;
+        }
+
+        for(int mel=0; mel<fbank->opts.num_bins; mel++){
+            float val = 0.0f;
+            for(int fft=0; fft<fbank->num_fft_bins; fft++){
+                float magnitude = (float)(data[fft]);
+
+                val += magnitude * fbank->mel_bins[mel * fbank->num_fft_bins + fft];
             }
+            out[mel] = val;
         }
 
         for(int mel=0; mel<fbank->opts.num_bins; mel++){
