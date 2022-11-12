@@ -25,6 +25,7 @@ int main(int argc, char *argv[]){
 
     aam_api_init();
     AprilASRModel model = aam_create_model(argv[2]);
+    AprilASRSession session = aas_create_session(model);
 
 
     if(argv[1][0] == '-' && argv[1][1] == 0) {
@@ -37,17 +38,17 @@ int main(int argc, char *argv[]){
             }
 
             // avoid processing silence
-            bool found_nonzero = false;
-            for(int i=0; i<r; i++){
-                if(data[i] != 0){
-                    found_nonzero = true;
-                    break;
-                }
-            }
-            if(!found_nonzero) continue;
+            //bool found_nonzero = false;
+            //for(int i=0; i<r; i++){
+            //    if(data[i] != 0){
+            //        found_nonzero = true;
+            //        break;
+            //    }
+            //}
+            //if(!found_nonzero) continue;
             
 
-            aam_feed_pcm16(model, (short *)data, r/2);
+            aas_feed_pcm16(session, (short *)data, r/2);
         }
     } else {
         FILE *fd = fopen(argv[1], "r");
@@ -81,7 +82,7 @@ int main(int argc, char *argv[]){
 
         printf("Read file, %llu bytes\n", sz1);
 
-        aam_feed_pcm16(model, (short *)file_data, sz1/2);
+        aas_feed_pcm16(session, (short *)file_data, sz1/2);
         printf("\n");
         free(file_data);
     }

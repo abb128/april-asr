@@ -22,6 +22,7 @@ $ ./main ../example.wav
 TODO:
 * Clean awful code
 * Split model and session to allow many sessions for one model
+* Better error handling
 * Read tokens.txt or similar instead of hardcoding tokens.h
 * Do same with parameters, or get from ONNX
 * Flushing
