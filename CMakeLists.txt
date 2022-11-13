@@ -12,9 +12,9 @@ if(NOT onnxruntime_FOUND)
 endif()
 
 
-include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/fft ${ORT_INCLUDE_DIR})
+include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src ${ORT_INCLUDE_DIR})
 
-add_library(aprilasr april.c fft/pocketfft.c fft/fbank.c)
-add_executable(main main.cpp)
+add_library(aprilasr src/april.c src/fbank.c src/fft/pocketfft.c)
+add_executable(main example.cpp)
 
 target_link_libraries(main PRIVATE aprilasr onnxruntime::onnxruntime)

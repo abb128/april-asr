@@ -3,7 +3,7 @@
 #include <time.h>
 #include <stdbool.h>
 
-#include "april.h"
+#include "april_api.h"
 #include "fbank.h"
 #include "onnxruntime_c_api.h"
 #include "ort_util.h"

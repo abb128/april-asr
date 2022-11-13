@@ -5,7 +5,7 @@
 #include <math.h>
 #include <string.h>
 #include "fbank.h"
-#include "pocketfft.h"
+#include "fft/pocketfft.h"
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
