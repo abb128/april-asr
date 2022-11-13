@@ -1,5 +1,7 @@
-// TODO: snip edges
-// TODO: This is not fully 1:1 with kaldifeat yet, in kaldifeat the lower parts are weaker, not sure why
+#ifndef _APRIL_FBANK
+#define _APRIL_FBANK
+
+#include <stdbool.h>
 
 struct OnlineFBank_i;
 typedef struct OnlineFBank_i * OnlineFBank;
@@ -45,3 +47,5 @@ void fbank_accept_waveform(OnlineFBank fbank, float *wave, size_t wave_count);
 bool fbank_pull_segments(OnlineFBank fbank, float *output, size_t output_count);
 // fbank_flush
 void free_fbank(OnlineFBank fbank);
+
+#endif

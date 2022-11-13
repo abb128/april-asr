@@ -1,3 +1,6 @@
+#ifndef _APRIL_API
+#define _APRIL_API
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -36,4 +39,6 @@ void aas_free(AprilASRSession session);
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif

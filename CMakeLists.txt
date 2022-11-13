@@ -14,7 +14,15 @@ endif()
 
 include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src ${ORT_INCLUDE_DIR})
 
-add_library(aprilasr src/april.c src/fbank.c src/fft/pocketfft.c)
+add_library(aprilasr
+  src/init.c
+  src/april_model.c
+  src/april_session.c
+  src/params.c
+  src/fbank.c
+  src/ort_util.c
+  src/fft/pocketfft.c
+)
 add_executable(main example.cpp)
 
 target_link_libraries(main PRIVATE aprilasr onnxruntime::onnxruntime)
