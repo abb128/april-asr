@@ -133,7 +133,7 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
     }
 
 
-    
+    /*
     fprintf(stderr, "\r");
     for(int i=0; i<80; i++){
         fprintf(stderr, " ");
@@ -142,6 +142,7 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
     for(int m=0; m<aas->active_token_head; m++){
         fprintf(stderr, "%s", get_token(params, aas->active_tokens[m]));
     }
+    */
 
     // If the current token is equal to previous, ignore early_emit
     bool is_equal_to_previous = aas->context.data[1] == max_idx;
@@ -152,20 +153,23 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
 
     // If current token is non-blank, emit it
     if(max_idx != blank) {
+        /*
         if(aas->active_token_head > 16){
             if((get_token(params, max_idx)[0] == ' ') || (aas->active_token_head > 30)) {
                 aas->active_token_head = 0;
                 fprintf(stderr, "\n");
             }
         }
+        */
 
-        aas->active_tokens[aas->active_token_head] = max_idx;
-        aas->active_token_head++;
+        //aas->active_tokens[aas->active_token_head] = max_idx;
+        //aas->active_token_head++;
 
         aas->context.data[0] = aas->context.data[1];
         aas->context.data[1] = (int64_t)max_idx;
 
-        fprintf(stderr, "%s", get_token(params, max_idx));
+        //fprintf(stderr, "%s", get_token(params, max_idx));
+        aas->handler(aas->userdata, APRIL_RESULT_RECOGNITION_APPEND, strlen(get_token(params, max_idx)), get_token(params, max_idx));
 
         return true;
     }else if((max_idx == 0)
@@ -173,7 +177,8 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
         && (max_val_non0 > (max_val - 6.0f))
         && ((aas->active_token_head <= 16) || (get_token(params, max_idx_non0)[0] != ' '))
     ) {
-        fprintf(stderr, "%s", get_token(params, max_idx_non0));
+        aas->handler(aas->userdata, APRIL_RESULT_RECOGNITION_LOOKAHEAD, strlen(get_token(params, max_idx_non0)), get_token(params, max_idx_non0));
+        //fprintf(stderr, "%s", get_token(params, max_idx_non0));
         return false;
     }
 }
