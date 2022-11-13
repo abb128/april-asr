@@ -31,6 +31,14 @@ void read_params(ModelParameters *params, const char *params_file) {
     params->sample_rate  = i32_ptr[4];
     params->token_count  = i32_ptr[5];
     params->blank_id     = i32_ptr[6];
+
+    assert(params->batch_size == 1);
+    assert((params->segment_size > 0) && (params->segment_size < 100));
+    assert((params->segment_step > 0) && (params->segment_step < 100) && (params->segment_step <= params->segment_size));
+    assert((params->mel_features > 0) && (params->mel_features < 256));
+    assert((params->sample_rate > 0) && (params->sample_rate < 144000));
+    assert((params->token_count > 0) && (params->token_count < 16384));
+    assert((params->blank_id >= 0) && (params->blank_id < params->token_count));
     
 
     // Read all piece lengths and figure out the maximum
@@ -48,9 +56,7 @@ void read_params(ModelParameters *params, const char *params_file) {
     params->token_length += 1; // for '\0' byte
 
     // Allocate the memory
-    printf("Tokens: %d, max size: %d\n", params->token_count, params->token_length);
     params->tokens = (char *)calloc(params->token_count, params->token_length);
-    memset(params->tokens, '\0', params->token_count * params->token_length);
 
     // Rewind back and read
     fseek(fd, tokens_start, SEEK_SET);

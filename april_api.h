@@ -1,6 +1,8 @@
 #ifndef _APRIL_API
 #define _APRIL_API
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -25,9 +27,34 @@ size_t aam_get_sample_rate(AprilASRModel model);
 void aam_free(AprilASRModel model);
 
 
+typedef struct AprilUUID {
+    uint64_t lower;
+    uint64_t upper;
+} AprilUUID;
+
+enum AprilResultType {
+    APRIL_RESULT_UNKNOWN = 0,
+
+     // TODO provide full  text not juts append, else going back is impossible
+    APRIL_RESULT_RECOGNITION_APPEND,
+    APRIL_RESULT_RECOGNITION_LOOKAHEAD
+};
+
+
+// (void *userdata, AprilResultType result_type, size_t text_size, const char *text)
+// Text pointer is guaranteed to be valid only for the duration of the call.
+typedef void(*AprilRecognitionResultHandler)(void*, int, size_t, const char*);
+
 // Creates a session with a given model. A model may have many sessions
-// associated with it.
-AprilASRSession aas_create_session(AprilASRModel model);
+// associated with it. The handler will be called with events as they occur,
+// it may be called from a different thread. UUID may be NULL or a pointer to a
+// unique ID identifying the speaker to restore context and state.
+AprilASRSession aas_create_session(
+    AprilASRModel model,
+    AprilRecognitionResultHandler handler,
+    void *userdata,
+    AprilUUID *uuid
+);
 
 // Feed PCM16 audio data to the session, must be single-channel and sampled
 // to the sample rate given in `aam_get_sample_rate`

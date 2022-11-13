@@ -1,7 +1,12 @@
 #include "params.h"
 #include "april_session.h"
 
-AprilASRSession aas_create_session(AprilASRModel model) {
+AprilASRSession aas_create_session(
+    AprilASRModel model,
+    AprilRecognitionResultHandler handler,
+    void *userdata,
+    AprilUUID *uuid
+) {
     AprilASRSession aas = (AprilASRSession)calloc(1, sizeof(struct AprilASRSession_i));
 
     aas->model = model;
@@ -35,6 +40,10 @@ AprilASRSession aas_create_session(AprilASRModel model) {
     assert(aas->eout.tensor    != NULL);
     assert(aas->context.tensor != NULL);
     assert(aas->logits.tensor  != NULL);
+
+    aas->handler = handler;
+    aas->userdata = userdata;
+    assert(handler != NULL);
 
     return aas;
 }
@@ -102,28 +111,29 @@ void aas_run_joiner(AprilASRSession aas){
 // aas->context and aas->active_tokens. Uses basic greedy search algorithm.
 bool aas_process_logits(AprilASRSession aas, float early_emit){
     ModelParameters *params = &aas->model->params;
+    size_t blank = params->blank_id;
     float *logits = aas->logits.data;
 
-    logits[0] -= early_emit;
+    logits[blank] -= early_emit;
 
     int max_idx = -1;
     int max_idx_non0 = -1;
     float max_val = -9999999999.0;
     float max_val_non0 = -9999999999.0;
-    for(int i=0; i<500; i++){
+    for(int i=0; i<params->token_count; i++){
         if(logits[i] > max_val){
             max_idx = i;
             max_val = logits[i];
         }
 
-        if((logits[i] > max_val_non0) && (i > 0)){
+        if((logits[i] > max_val_non0) && (i != blank)){
             max_idx_non0 = i;
             max_val_non0 = logits[i];
         }
     }
 
 
-
+    
     fprintf(stderr, "\r");
     for(int i=0; i<80; i++){
         fprintf(stderr, " ");
@@ -133,12 +143,18 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
         fprintf(stderr, "%s", get_token(params, aas->active_tokens[m]));
     }
 
-    //char p = '\r';
-    if(max_idx != 0) {
+    // If the current token is equal to previous, ignore early_emit
+    bool is_equal_to_previous = aas->context.data[1] == max_idx;
+    if(is_equal_to_previous && ((logits[blank] + early_emit) >= max_val)) {
+        max_idx = blank;
+        max_val = logits[blank] + early_emit;
+    }
+
+    // If current token is non-blank, emit it
+    if(max_idx != blank) {
         if(aas->active_token_head > 16){
             if((get_token(params, max_idx)[0] == ' ') || (aas->active_token_head > 30)) {
                 aas->active_token_head = 0;
-                //p = '\n';
                 fprintf(stderr, "\n");
             }
         }
@@ -153,7 +169,7 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
 
         return true;
     }else if((max_idx == 0)
-        && (aas->context.data[1] != max_idx_non0)
+        && (!is_equal_to_previous)
         && (max_val_non0 > (max_val - 6.0f))
         && ((aas->active_token_head <= 16) || (get_token(params, max_idx_non0)[0] != ' '))
     ) {

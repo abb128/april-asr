@@ -26,6 +26,9 @@ struct AprilASRSession_i {
 
     int64_t active_tokens[64];
     size_t active_token_head;
+
+    AprilRecognitionResultHandler handler;
+    void *userdata;
 };
 
 #endif

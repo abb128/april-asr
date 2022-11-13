@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <cstdlib>
 #include <cstring>
+#include <assert.h>
 #include "april_api.h"
 
 int ends_with(const char *str, const char *suffix) {
@@ -12,6 +13,33 @@ int ends_with(const char *str, const char *suffix) {
     if (lensuffix >  lenstr)
         return 0;
     return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
+}
+
+const char *ExampleState = "This is a test to ensure userdata is passed correctly";
+
+int backspace_needed = 0;
+void handler(void *userdata, int result, size_t text_size, const char *text) {
+    assert(userdata == ExampleState);
+    switch(result){
+        case APRIL_RESULT_RECOGNITION_APPEND:
+            for(int i=0; i<backspace_needed; i++) fprintf(stderr, "\b");
+            for(int i=0; i<backspace_needed; i++) fprintf(stderr, " ");
+            for(int i=0; i<backspace_needed; i++) fprintf(stderr, "\b");
+            backspace_needed = 0;
+            fprintf(stderr, "%s", text);
+            break;
+
+        case APRIL_RESULT_RECOGNITION_LOOKAHEAD:
+            for(int i=0; i<backspace_needed; i++) fprintf(stderr, "\b");
+            for(int i=0; i<backspace_needed; i++) fprintf(stderr, " ");
+            for(int i=0; i<backspace_needed; i++) fprintf(stderr, "\b");
+            backspace_needed = text_size;
+            fprintf(stderr, "%s", text);
+            break;
+
+        default:
+            assert(false);
+    }
 }
 
 int main(int argc, char *argv[]){
@@ -25,7 +53,7 @@ int main(int argc, char *argv[]){
 
     aam_api_init();
     AprilASRModel model = aam_create_model(argv[2]);
-    AprilASRSession session = aas_create_session(model);
+    AprilASRSession session = aas_create_session(model, handler, (void*)ExampleState, NULL);
     if(argv[1][0] == '-' && argv[1][1] == 0) {
         // read from stdin
         char data[6400];
@@ -85,7 +113,8 @@ int main(int argc, char *argv[]){
 
         printf("Read file, %llu bytes\n", sz1);
 
-        aas_feed_pcm16(session, (short *)file_data, sz1/2);
+        for(int i=0; i<100; i++)
+            aas_feed_pcm16(session, (short *)file_data, sz1/2);
         printf("\n");
         free(file_data);
     }
