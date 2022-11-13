@@ -47,7 +47,7 @@ typedef struct TensorI {
 #define DEF_ALLOC_TENS(rtype, fname, allocor, creator, dtype, denum)            \
     static inline rtype fname(OrtMemoryInfo *memory_info, int64_t *shape){      \
         rtype result;                                                           \
-        result.data = allocor(shape, dtype);                                    \  
+        result.data = allocor(shape, dtype);                                    \
         creator(memory_info, result.data, shape, dtype, denum, &result.tensor); \
         return result;                                                          \
     }
@@ -102,7 +102,7 @@ size_t input_dims(OrtSession* session, size_t idx, int64_t *dimensions, size_t d
 size_t output_dims(OrtSession* session, size_t idx, int64_t *dimensions, size_t dim_size) {
     size_t num;
     OrtTypeInfo *info;
-    OrtTensorTypeAndShapeInfo *tinfo;
+    const OrtTensorTypeAndShapeInfo *tinfo;
     ORT_ABORT_ON_ERROR(g_ort->SessionGetOutputTypeInfo(session, idx, &info));
     ORT_ABORT_ON_ERROR(g_ort->CastTypeInfoToTensorInfo(info, &tinfo));
     assert(tinfo != NULL);

@@ -18,6 +18,83 @@ void aam_api_init(void){
     }
 }
 
+typedef struct ModelParameters {
+    int batch_size;
+    int segment_size;
+    int segment_step;
+    int mel_features;
+    int sample_rate;
+    int blank_id;
+
+    int token_count;
+    size_t token_length;
+    
+    char *tokens;
+} ModelParameters;
+
+char *get_token(ModelParameters *params, size_t token_index){
+    return &params->tokens[params->token_length * token_index];
+}
+
+void read_params(ModelParameters *params, const char *params_file) {
+    char buffer[64];
+    int32_t *i32_ptr = (int32_t*)buffer;
+    int64_t *i64_ptr = (int64_t*)buffer;
+
+    FILE *fd = fopen(params_file, "r");
+    fread(buffer, sizeof(int64_t), 1, fd);
+
+    // 'PARAMS\0\0'
+    const int64_t expected = 0x0000534D41524150L;
+    assert(i64_ptr[0] == expected);
+
+    fread(buffer, sizeof(int32_t), 7, fd);
+
+    params->batch_size   = i32_ptr[0];
+    params->segment_size = i32_ptr[1];
+    params->segment_step = i32_ptr[2];
+    params->mel_features = i32_ptr[3];
+    params->sample_rate  = i32_ptr[4];
+    params->token_count  = i32_ptr[5];
+    params->blank_id     = i32_ptr[6];
+    
+
+    // Read all piece lengths and figure out the maximum
+    size_t tokens_start = ftell(fd);
+    
+    params->token_length = 0;
+    for(int i=0; i<params->token_count; i++){
+        fread(buffer, sizeof(int32_t), 1, fd);
+        int token_len = i32_ptr[0];
+        if(token_len > params->token_length)
+            params->token_length = token_len;
+        
+        fseek(fd, token_len, SEEK_CUR);
+    }
+    params->token_length += 1; // for '\0' byte
+
+    // Allocate the memory
+    printf("Tokens: %d, max size: %d\n", params->token_count, params->token_length);
+    params->tokens = (char *)calloc(params->token_count, params->token_length);
+    memset(params->tokens, '\0', params->token_count * params->token_length);
+
+    // Rewind back and read
+    fseek(fd, tokens_start, SEEK_SET);
+    for(int i=0; i<params->token_count; i++){
+        fread(buffer, sizeof(int32_t), 1, fd);
+        int token_len = i32_ptr[0];
+        
+        assert(token_len < params->token_length);
+        fread(get_token(params, i), 1, token_len, fd);
+    }
+}
+
+void free_params(ModelParameters *params){
+    free(params->tokens);
+}
+
+
+
 struct AprilASRModel_i {
     OrtEnv *env;
     OrtSessionOptions* session_options;
@@ -35,6 +112,7 @@ struct AprilASRModel_i {
     int64_t logits_dim[3];  // (1, 1, 500)
 
     FBankOptions fbank_opts;
+    ModelParameters params;
 };
 
 AprilASRModel aam_create_model(const char *model_dir) {
@@ -56,6 +134,9 @@ AprilASRModel aam_create_model(const char *model_dir) {
     SET_CONCAT_PATH(model_path, model_dir, "joiner.onnx");
     ORT_ABORT_ON_ERROR(g_ort->CreateSession(aam->env, model_path, aam->session_options, &aam->joiner));
 
+    SET_CONCAT_PATH(model_path, model_dir, "params.bin");
+    read_params(&aam->params, model_path);
+
     assert(input_count(aam->encoder)  == 3);
     assert(output_count(aam->encoder) == 3);
     
@@ -70,23 +151,31 @@ AprilASRModel aam_create_model(const char *model_dir) {
     assert(input_dims(aam->joiner, 0, aam->context_dim, 2) == 2);
     assert(output_dims(aam->joiner, 0, aam->logits_dim, 3) == 3);
 
+    aam->fbank_opts.sample_freq = aam->params.sample_rate;
+    aam->fbank_opts.num_bins    = aam->params.mel_features;
+    aam->fbank_opts.pull_segment_count = aam->params.segment_size;
+    aam->fbank_opts.pull_segment_step  = aam->params.segment_step;
+
     // TODO: read these from config file
-    aam->fbank_opts.sample_freq = 16000;
     aam->fbank_opts.frame_shift_ms = 10;
     aam->fbank_opts.frame_length_ms = 25;
-    aam->fbank_opts.num_bins = 80;          assert(aam->x_dim[2] == 80);
     aam->fbank_opts.round_pow2 = true;
     aam->fbank_opts.mel_low = 20;
     aam->fbank_opts.mel_high = 0;
     aam->fbank_opts.snip_edges = true;
-    aam->fbank_opts.pull_segment_count = 9; assert(aam->x_dim[1] == 9);
-    aam->fbank_opts.pull_segment_step = 4;
+
+    assert(aam->x_dim[0] == aam->params.batch_size);
+    assert(aam->x_dim[1] == aam->fbank_opts.pull_segment_count);
+    assert(aam->x_dim[2] == aam->fbank_opts.num_bins);
+    assert(aam->logits_dim[2] == aam->params.token_count);
 
     return aam;
 }
 
 
 void aam_free(AprilASRModel model) {
+    free_params(&model->params);
+
     g_ort->ReleaseSession(model->joiner);
     g_ort->ReleaseSession(model->encoder);
     g_ort->ReleaseSessionOptions(model->session_options);
@@ -171,10 +260,6 @@ void aas_free(AprilASRSession session) {
     free(session);
 }
 
-// TODO
-#include "tokens.h"
-#define SEGSIZE 3200
-
 const char* encoder_input_names[] = {"x", "h", "c"};
 const char* encoder_output_names[] = {"encoder_out", "next_h", "next_c"};
 
@@ -184,7 +269,7 @@ const char* joiner_output_names[] = {"logits"};
 // Runs encoder on current data in aas->x
 void aas_run_encoder(AprilASRSession aas){
     aas->hc_use_0 = !aas->hc_use_0;
-    OrtValue *inputs[] = {
+    const OrtValue *inputs[] = {
         aas->x.tensor,
         aas->h[aas->hc_use_0 ? 0 : 1].tensor,
         aas->c[aas->hc_use_0 ? 0 : 1].tensor
@@ -203,8 +288,14 @@ void aas_run_encoder(AprilASRSession aas){
 
 // Runs joiner on current data in aas->context and aas->eout
 void aas_run_joiner(AprilASRSession aas){
-    OrtValue *inputs[] = { aas->context.tensor, aas->eout.tensor };
-    OrtValue *outputs[] = { aas->logits.tensor };
+    const OrtValue *inputs[] = {
+        aas->context.tensor,
+        aas->eout.tensor
+    };
+    
+    OrtValue *outputs[] = {
+        aas->logits.tensor
+    };
 
     ORT_ABORT_ON_ERROR(g_ort->Run(aas->model->joiner, NULL,
                                     joiner_input_names, inputs, 2,
@@ -215,6 +306,7 @@ void aas_run_joiner(AprilASRSession aas){
 // added, else returns false if no new data is available. Updates
 // aas->context and aas->active_tokens. Uses basic greedy search algorithm.
 bool aas_process_logits(AprilASRSession aas, float early_emit){
+    ModelParameters *params = &aas->model->params;
     float *logits = aas->logits.data;
 
     logits[0] -= early_emit;
@@ -235,19 +327,21 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
         }
     }
 
+
+
     fprintf(stderr, "\r");
     for(int i=0; i<80; i++){
         fprintf(stderr, " ");
     }
     fprintf(stderr, "\r");
     for(int m=0; m<aas->active_token_head; m++){
-        fprintf(stderr, "%s", tokens[aas->active_tokens[m]]);
+        fprintf(stderr, "%s", get_token(params, aas->active_tokens[m]));
     }
 
     //char p = '\r';
     if(max_idx != 0) {
         if(aas->active_token_head > 16){
-            if((tokens[max_idx][0] == ' ') || (aas->active_token_head > 30)) {
+            if((get_token(params, max_idx)[0] == ' ') || (aas->active_token_head > 30)) {
                 aas->active_token_head = 0;
                 //p = '\n';
                 fprintf(stderr, "\n");
@@ -260,20 +354,20 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
         aas->context.data[0] = aas->context.data[1];
         aas->context.data[1] = (int64_t)max_idx;
 
-        fprintf(stderr, "%s", tokens[max_idx]);
+        fprintf(stderr, "%s", get_token(params, max_idx));
 
         return true;
     }else if((max_idx == 0)
         && (aas->context.data[1] != max_idx_non0)
         && (max_val_non0 > (max_val - 6.0f))
-        && ((aas->active_token_head <= 16) || (tokens[max_idx_non0][0] != ' '))
+        && ((aas->active_token_head <= 16) || (get_token(params, max_idx_non0)[0] != ' '))
     ) {
-        fprintf(stderr, "%s", tokens[max_idx_non0]);
+        fprintf(stderr, "%s", get_token(params, max_idx_non0));
         return false;
     }
 }
 
-
+#define SEGSIZE 3200 //TODO
 void aas_feed_pcm16(AprilASRSession aas, short *pcm16, size_t short_count) {
     assert(aas->fbank != NULL);
     assert(aas != NULL);
