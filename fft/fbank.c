@@ -24,7 +24,7 @@ void generate_povey_window(float *out, int N) {
     double N_f = (double)N;
     for (int i=0; i<N; i++){
         double n = (double)i;
-        out[i] = (float)pow((0.5 - 0.5 * cos(n / N * 6.283185307)), 0.85);
+        out[i] = (float)pow((0.5 - 0.5 * cos(n / N_f * 6.283185307)), 0.85);
     }
 }
 
@@ -90,6 +90,10 @@ struct OnlineFBank_i {
 
     float *prev_leftover;
     size_t prev_leftover_count;
+
+    rfft_plan plan;
+    double *data;
+    double *ret;
 };
 
 OnlineFBank make_fbank(FBankOptions opts) {
@@ -118,29 +122,27 @@ OnlineFBank make_fbank(FBankOptions opts) {
     fbank->temp_segment_head = 0;
     fbank->temp_segment_avail = 0;
 
-
     fbank->prev_leftover = (float*)calloc(fbank->padded_window_size * 2, sizeof(float));
     fbank->prev_leftover_count = 0;
+
+    fbank->plan = make_rfft_plan(fbank->padded_window_size);
+    fbank->data = (double*)calloc(fbank->padded_window_size, sizeof(double));
+    fbank->ret  = (double*)calloc(fbank->padded_window_size + 1, sizeof(double));
+
+    return fbank;
 }
 
 void fbank_accept_waveform(OnlineFBank fbank, float *wave, size_t wave_count) {
-    double data[fbank->padded_window_size];
-    double ret[fbank->padded_window_size + 1];
-    rfft_plan plan = make_rfft_plan(fbank->padded_window_size);
-
-    //for(ssize_t i=0; i<(wave_count/fbank->window_shift); i++) {
     for(ssize_t i=0;; i++) {
         if((fbank->temp_segment_avail + 1) > fbank->temp_segments_y){
             printf("%d Out of space! Please call fbank_pull_segments. Can't eat wave\n", i);
             return;
         }
 
-        //printf("leftover %d\n", fbank->prev_leftover_count);
         ssize_t start_idx = i * fbank->window_shift - fbank->prev_leftover_count;
         ssize_t end_idx = start_idx + fbank->padded_window_size;
 
         if(end_idx > wave_count){
-            //printf("End idx %llu %llu %llu\n", end_idx, i, (wave_count / fbank->window_shift));
             memcpy(fbank->prev_leftover, &wave[start_idx], (wave_count - start_idx) * sizeof(float));
             fbank->prev_leftover_count = wave_count - start_idx;
             return;
@@ -150,44 +152,47 @@ void fbank_accept_waveform(OnlineFBank fbank, float *wave, size_t wave_count) {
             ssize_t wave_idx = start_idx + j;
             if(wave_idx < 0){
                 ssize_t ll_idx = fbank->prev_leftover_count + wave_idx;
-                data[j] = fbank->prev_leftover[ll_idx] * fbank->window[j];
+                fbank->data[j] = fbank->prev_leftover[ll_idx] * fbank->window[j];
             } else {
-                data[j] = wave[start_idx + j] * fbank->window[j];
+                fbank->data[j] = wave[start_idx + j] * fbank->window[j];
             }
         }
         
-        double *dptr = data;
-        double *rptr = ret;
+        double *dptr = fbank->data;
+        double *rptr = fbank->ret;
         memcpy((char *)(rptr+1), dptr, fbank->padded_window_size * sizeof(double));
 
-        int res = rfft_forward(plan, rptr+1, 1.0);
+        int res = rfft_forward(fbank->plan, rptr+1, 1.0);
         if(res != 0){
             printf("Fail %d", res);
             break;
         }
 
-        rptr[0] = ret[1];
+        rptr[0] = fbank->ret[1];
         rptr[1] = 0.0;
 
         float *out = &fbank->temp_segments[fbank->temp_segment_head * fbank->opts.num_bins];
 
+        // Convert to magnitude
         for(int fft=0; fft<fbank->num_fft_bins; fft++){
             float real = (float)(rptr[fft * 2]);
             float imaginary = (float)(rptr[fft * 2 + 1]);
 
-            data[fft] = real * real + imaginary * imaginary;
+            fbank->data[fft] = real * real + imaginary * imaginary;
         }
 
+        // Convert to mel energies
         for(int mel=0; mel<fbank->opts.num_bins; mel++){
             float val = 0.0f;
             for(int fft=0; fft<fbank->num_fft_bins; fft++){
-                float magnitude = (float)(data[fft]);
+                float magnitude = (float)(fbank->data[fft]);
 
                 val += magnitude * fbank->mel_bins[mel * fbank->num_fft_bins + fft];
             }
             out[mel] = val;
         }
 
+        // Log mel energies
         for(int mel=0; mel<fbank->opts.num_bins; mel++){
             const float kEps = 1.1920928955078125e-07f;
             out[mel] = (float)log((double)MAX(kEps, out[mel]));
@@ -226,5 +231,13 @@ bool fbank_pull_segments(OnlineFBank fbank, float *output, size_t output_count) 
 }
 
 void free_fbank(OnlineFBank fbank) {
-    // TODO
+    free(fbank->ret);
+    free(fbank->data);
+    destroy_rfft_plan(fbank->plan);
+
+    free(fbank->prev_leftover);
+    free(fbank->temp_segments);
+    free(fbank->mel_bins);
+    free(fbank->window);
+    free(fbank);
 }

@@ -26,8 +26,6 @@ int main(int argc, char *argv[]){
     aam_api_init();
     AprilASRModel model = aam_create_model(argv[2]);
     AprilASRSession session = aas_create_session(model);
-
-
     if(argv[1][0] == '-' && argv[1][1] == 0) {
         // read from stdin
         char data[6400];
@@ -50,6 +48,11 @@ int main(int argc, char *argv[]){
 
             aas_feed_pcm16(session, (short *)data, r/2);
         }
+    } else if (argv[1][0] == '?' && argv[1][1] == 0) {
+        // memory leak check, just send some blank 
+        char data[6400];
+        memset(data, 0, 6400);
+        aas_feed_pcm16(session, (short *)data, 3200);
     } else {
         FILE *fd = fopen(argv[1], "r");
         
@@ -86,6 +89,9 @@ int main(int argc, char *argv[]){
         printf("\n");
         free(file_data);
     }
+
+    aas_free(session);
+    aam_free(model);
 
     return 0;
 }

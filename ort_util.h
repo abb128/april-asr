@@ -60,8 +60,21 @@ DEF_ALLOC_TENS(TensorI, alloc_tensor1i, CALLOC_SHAPE1, CREATE_TENSOR1, int64_t, 
 DEF_ALLOC_TENS(TensorI, alloc_tensor2i, CALLOC_SHAPE2, CREATE_TENSOR2, int64_t, ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64);
 DEF_ALLOC_TENS(TensorI, alloc_tensor3i, CALLOC_SHAPE3, CREATE_TENSOR3, int64_t, ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64);
 
-void free_tensorf(TensorF *f) { } // TODO
-void free_tensori(TensorI *f) { } // TODO
+static inline void free_tensorf(TensorF *f) {
+    g_ort->ReleaseValue(f->tensor);
+    free(f->data);
+
+    f->tensor = NULL;
+    f->data = NULL;
+}
+
+static inline void free_tensori(TensorI *f) {
+    g_ort->ReleaseValue(f->tensor);
+    free(f->data);
+    
+    f->tensor = NULL;
+    f->data = NULL;
+}
 
 #define SET_CONCAT_PATH(out_path, base, fname)          \
     do {                                                \

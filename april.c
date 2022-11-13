@@ -81,6 +81,18 @@ AprilASRModel aam_create_model(const char *model_dir) {
     aam->fbank_opts.snip_edges = true;
     aam->fbank_opts.pull_segment_count = 9; assert(aam->x_dim[1] == 9);
     aam->fbank_opts.pull_segment_step = 4;
+
+    return aam;
+}
+
+
+void aam_free(AprilASRModel model) {
+    g_ort->ReleaseSession(model->joiner);
+    g_ort->ReleaseSession(model->encoder);
+    g_ort->ReleaseSessionOptions(model->session_options);
+    g_ort->ReleaseEnv(model->env);
+
+    free(model);
 }
 
 struct AprilASRSession_i {
@@ -111,7 +123,6 @@ AprilASRSession aas_create_session(AprilASRModel model) {
     aas->model = model;
     aas->fbank = make_fbank(model->fbank_opts);
 
-
     ORT_ABORT_ON_ERROR(g_ort->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &aas->memory_info));
     OrtMemoryInfo *mi = aas->memory_info;
 
@@ -130,8 +141,35 @@ AprilASRSession aas_create_session(AprilASRModel model) {
 
     aas->hc_use_0 = false;
     aas->active_token_head = 0;
+
+    assert(aas->fbank          != NULL);
+    assert(aas->x.tensor       != NULL);
+    assert(aas->h[0].tensor    != NULL);
+    assert(aas->c[0].tensor    != NULL);
+    assert(aas->h[1].tensor    != NULL);
+    assert(aas->c[1].tensor    != NULL);
+    assert(aas->eout.tensor    != NULL);
+    assert(aas->context.tensor != NULL);
+    assert(aas->logits.tensor  != NULL);
+
+    return aas;
 }
 
+void aas_free(AprilASRSession session) {
+    free_tensorf(&session->logits);
+    free_tensori(&session->context);
+    free_tensorf(&session->eout);
+    for(int i=0; i<2; i++) {
+        free_tensorf(&session->c[i]);
+        free_tensorf(&session->h[i]);
+    }
+
+    free_tensorf(&session->x);
+    g_ort->ReleaseMemoryInfo(session->memory_info);
+    free_fbank(session->fbank);
+
+    free(session);
+}
 
 // TODO
 #include "tokens.h"
@@ -182,20 +220,36 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
     logits[0] -= early_emit;
 
     int max_idx = -1;
+    int max_idx_non0 = -1;
     float max_val = -9999999999.0;
+    float max_val_non0 = -9999999999.0;
     for(int i=0; i<500; i++){
         if(logits[i] > max_val){
             max_idx = i;
             max_val = logits[i];
         }
+
+        if((logits[i] > max_val_non0) && (i > 0)){
+            max_idx_non0 = i;
+            max_val_non0 = logits[i];
+        }
     }
 
+    fprintf(stderr, "\r");
+    for(int i=0; i<80; i++){
+        fprintf(stderr, " ");
+    }
+    fprintf(stderr, "\r");
+    for(int m=0; m<aas->active_token_head; m++){
+        fprintf(stderr, "%s", tokens[aas->active_tokens[m]]);
+    }
+
+    //char p = '\r';
     if(max_idx != 0) {
-        char p = '\r';
         if(aas->active_token_head > 16){
             if((tokens[max_idx][0] == ' ') || (aas->active_token_head > 30)) {
                 aas->active_token_head = 0;
-                p = '\n';
+                //p = '\n';
                 fprintf(stderr, "\n");
             }
         }
@@ -203,23 +257,28 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
         aas->active_tokens[aas->active_token_head] = max_idx;
         aas->active_token_head++;
 
-        fprintf(stderr, "%s", tokens[max_idx]);
-        //fprintf(stderr, "%c", p);
-        //for(int m=0; m<aas->active_token_head; m++){
-        //    fprintf(stderr, "%s", tokens[aas->active_tokens[m]]);
-        //}
-
         aas->context.data[0] = aas->context.data[1];
         aas->context.data[1] = (int64_t)max_idx;
 
+        fprintf(stderr, "%s", tokens[max_idx]);
+
         return true;
-    } else {
+    }else if((max_idx == 0)
+        && (aas->context.data[1] != max_idx_non0)
+        && (max_val_non0 > (max_val - 6.0f))
+        && ((aas->active_token_head <= 16) || (tokens[max_idx_non0][0] != ' '))
+    ) {
+        fprintf(stderr, "%s", tokens[max_idx_non0]);
         return false;
     }
 }
 
 
 void aas_feed_pcm16(AprilASRSession aas, short *pcm16, size_t short_count) {
+    assert(aas->fbank != NULL);
+    assert(aas != NULL);
+    assert(pcm16 != NULL);
+
     size_t head = 0;
     float wave[SEGSIZE];
 
@@ -237,11 +296,11 @@ void aas_feed_pcm16(AprilASRSession aas, short *pcm16, size_t short_count) {
         while(fbank_pull_segments( aas->fbank, aas->x.data, sizeof(float)*SHAPE_PRODUCT3(aas->model->x_dim) )){
             aas_run_encoder(aas);
 
-            float early_emit = 4.0f;
+            float early_emit = 3.0f;
             for(int i=0; i<8; i++){
                 early_emit -= 1.0f;
                 aas_run_joiner(aas);
-                if(!aas_process_logits(aas, 0.0f)) break;
+                if(!aas_process_logits(aas, early_emit > 0.0f ? early_emit : 0.0f)) break;
             }
         }
 
