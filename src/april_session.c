@@ -132,6 +132,10 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
     bool is_equal_to_previous = aas->context.data[1] == max_idx;
     if(is_equal_to_previous) early_emit = 0.0f;
 
+    // If no emissions in a while, ignore early_emit.
+    // Helps prevent starting with stray " I" or similar phenomena
+    if(aas->runs_since_emission > 90) early_emit = 0.0f;
+
     float blank_val = logits[blank];
     bool is_blank = (blank_val - early_emit) > max_val;
 

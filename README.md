@@ -20,7 +20,6 @@ $ ./main ../example.wav
 
 
 TODO:
-* always starts with _I?
 * Better error handling
 * fbank snip_edges and kaldifeat difference :(
 * Could save hidden states
