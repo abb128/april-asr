@@ -5,7 +5,7 @@ AprilASRSession aas_create_session(
     AprilASRModel model,
     AprilRecognitionResultHandler handler,
     void *userdata,
-    AprilUUID *uuid
+    AprilSpeakerID *id
 ) {
     AprilASRSession aas = (AprilASRSession)calloc(1, sizeof(struct AprilASRSession_i));
 
@@ -30,6 +30,8 @@ AprilASRSession aas_create_session(
 
     aas->hc_use_0 = false;
     aas->active_token_head = 0;
+
+    aas->runs_since_emission = 100;
 
     assert(aas->fbank          != NULL);
     assert(aas->x.tensor       != NULL);
@@ -114,79 +116,78 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
     size_t blank = params->blank_id;
     float *logits = aas->logits.data;
 
-    logits[blank] -= early_emit;
-
     int max_idx = -1;
-    int max_idx_non0 = -1;
     float max_val = -9999999999.0;
-    float max_val_non0 = -9999999999.0;
     for(int i=0; i<params->token_count; i++){
+        if(i == blank) continue;
+
         if(logits[i] > max_val){
             max_idx = i;
             max_val = logits[i];
         }
-
-        if((logits[i] > max_val_non0) && (i != blank)){
-            max_idx_non0 = i;
-            max_val_non0 = logits[i];
-        }
     }
 
-
-    /*
-    fprintf(stderr, "\r");
-    for(int i=0; i<80; i++){
-        fprintf(stderr, " ");
-    }
-    fprintf(stderr, "\r");
-    for(int m=0; m<aas->active_token_head; m++){
-        fprintf(stderr, "%s", get_token(params, aas->active_tokens[m]));
-    }
-    */
-
-    // If the current token is equal to previous, ignore early_emit
+    // If the current token is equal to previous, ignore early_emit.
+    // Helps prevent repeating like ALUMUMUMUMUMUININININIUM which happens for some reason
     bool is_equal_to_previous = aas->context.data[1] == max_idx;
-    if(is_equal_to_previous && ((logits[blank] + early_emit) >= max_val)) {
-        max_idx = blank;
-        max_val = logits[blank] + early_emit;
-    }
+    if(is_equal_to_previous) early_emit = 0.0f;
 
-    // If current token is non-blank, emit it
-    if(max_idx != blank) {
-        /*
-        if(aas->active_token_head > 16){
-            if((get_token(params, max_idx)[0] == ' ') || (aas->active_token_head > 30)) {
-                aas->active_token_head = 0;
-                fprintf(stderr, "\n");
-            }
-        }
-        */
+    float blank_val = logits[blank];
+    bool is_blank = (blank_val - early_emit) > max_val;
 
-        //aas->active_tokens[aas->active_token_head] = max_idx;
-        //aas->active_token_head++;
+
+    AprilToken token = { get_token(params, max_idx), max_val };
+
+    // If current token is non-blank, emit and return
+    if(!is_blank) {
+        aas->runs_since_emission = 0;
 
         aas->context.data[0] = aas->context.data[1];
         aas->context.data[1] = (int64_t)max_idx;
 
-        //fprintf(stderr, "%s", get_token(params, max_idx));
-        aas->handler(aas->userdata, APRIL_RESULT_RECOGNITION_APPEND, strlen(get_token(params, max_idx)), get_token(params, max_idx));
+        aas->handler(aas->userdata, APRIL_RESULT_RECOGNITION_FINAL, 1, &token);
+    } else {
+        aas->runs_since_emission += 1;
 
-        return true;
-    }else if((max_idx == 0)
-        && (!is_equal_to_previous)
-        && (max_val_non0 > (max_val - 6.0f))
-        && ((aas->active_token_head <= 16) || (get_token(params, max_idx_non0)[0] != ' '))
-    ) {
-        aas->handler(aas->userdata, APRIL_RESULT_RECOGNITION_LOOKAHEAD, strlen(get_token(params, max_idx_non0)), get_token(params, max_idx_non0));
-        //fprintf(stderr, "%s", get_token(params, max_idx_non0));
-        return false;
+        // If there's been silence for a while, forcibly reduce confidence to
+        // kill stray prediction
+        max_val -= (float)(aas->runs_since_emission-1)/10.0f;
+
+        // If current token is blank, but it's reasonably confident, emit as partial
+        if(!is_equal_to_previous && (max_val > (blank_val - 4.0f))) {
+            aas->handler(aas->userdata, APRIL_RESULT_RECOGNITION_PARTIAL, 1, &token);
+        } else {
+            // Emit blank partial
+            const char *blank = "\0\0";
+            aas->handler(aas->userdata, APRIL_RESULT_RECOGNITION_PARTIAL, 0, NULL);
+        }
     }
+
+    return is_blank;
+}
+
+bool aas_infer(AprilASRSession aas){
+    bool any_inferred = false;
+    while(fbank_pull_segments( aas->fbank, aas->x.data, sizeof(float)*SHAPE_PRODUCT3(aas->model->x_dim) )){
+        aas_run_encoder(aas);
+
+        float early_emit = 3.0f;
+        for(int i=0; i<8; i++){
+            early_emit -= 1.0f;
+            aas_run_joiner(aas);
+            if(!aas_process_logits(aas, early_emit > 0.0f ? early_emit : 0.0f)) break;
+        }
+        
+        any_inferred = true;
+    }
+
+    return any_inferred;
 }
 
 #define SEGSIZE 3200 //TODO
-void aas_feed_pcm16(AprilASRSession aas, short *pcm16, size_t short_count) {
-    assert(aas->fbank != NULL);
-    assert(aas != NULL);
+void aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count) {
+    assert(session->fbank != NULL);
+    assert(session != NULL);
     assert(pcm16 != NULL);
 
     size_t head = 0;
@@ -201,19 +202,16 @@ void aas_feed_pcm16(AprilASRSession aas, short *pcm16, size_t short_count) {
             wave[i] = (float)pcm16[head + i] / 32768.0f;
         }
         
-        fbank_accept_waveform(aas->fbank, wave, remaining);
+        fbank_accept_waveform(session->fbank, wave, remaining);
 
-        while(fbank_pull_segments( aas->fbank, aas->x.data, sizeof(float)*SHAPE_PRODUCT3(aas->model->x_dim) )){
-            aas_run_encoder(aas);
-
-            float early_emit = 3.0f;
-            for(int i=0; i<8; i++){
-                early_emit -= 1.0f;
-                aas_run_joiner(aas);
-                if(!aas_process_logits(aas, early_emit > 0.0f ? early_emit : 0.0f)) break;
-            }
-        }
+        aas_infer(session);
 
         head += remaining;
     }
+}
+
+
+void aas_flush(AprilASRSession session) {
+    while(fbank_flush(session->fbank))
+        aas_infer(session);
 }

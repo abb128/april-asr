@@ -20,14 +20,11 @@ $ ./main ../example.wav
 
 
 TODO:
+* always starts with _I?
 * Better error handling
-* Do same with parameters, or get from ONNX
-* Flushing
-* Accumulate 3200 samples, any less can be disastrous and not work
 * fbank snip_edges and kaldifeat difference :(
 * Could save hidden states
 * Could batch many inputs into one call
 * Figure out licensing
 * Language model
-* merge proj models in export.py?
 * VAD

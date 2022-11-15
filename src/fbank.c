@@ -10,6 +10,8 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
+const float kEps = 1.1920928955078125e-07f;
+
 int round_up_to_nearest_power_of_two(int n) {
     n -= 1;
     n |= n >> 1;
@@ -86,6 +88,7 @@ struct OnlineFBank_i {
     size_t temp_segment_head; // y, write
     size_t temp_segment_tail; // y, read
     size_t temp_segment_avail;
+    ssize_t temp_segment_avail_f;
 
 
     float *prev_leftover;
@@ -132,10 +135,10 @@ OnlineFBank make_fbank(FBankOptions opts) {
     return fbank;
 }
 
-void fbank_accept_waveform(OnlineFBank fbank, float *wave, size_t wave_count) {
+void fbank_accept_waveform(OnlineFBank fbank, const float *wave, size_t wave_count) {
     for(ssize_t i=0;; i++) {
         if((fbank->temp_segment_avail + 1) > fbank->temp_segments_y){
-            printf("%d Out of space! Please call fbank_pull_segments. Can't eat wave\n", i);
+            printf("fbank ran out of space. Please call fbank_pull_segments. Can't eat wave\n", i);
             return;
         }
 
@@ -143,7 +146,31 @@ void fbank_accept_waveform(OnlineFBank fbank, float *wave, size_t wave_count) {
         ssize_t end_idx = start_idx + fbank->padded_window_size;
 
         if(end_idx > wave_count){
-            memcpy(fbank->prev_leftover, &wave[start_idx], (wave_count - start_idx) * sizeof(float));
+            if(start_idx >= 0){
+                assert((wave_count - start_idx) < (fbank->padded_window_size * 2));
+                memcpy(fbank->prev_leftover, &wave[start_idx], (wave_count - start_idx) * sizeof(float));
+            }else{
+                // This branch may be hit when wave_count < fbank->padded_window_size
+                // We need to copy to prev_leftover not only data in wave, but also from
+                // prev_leftover itself.
+                
+                size_t num_to_move_from_prev = -start_idx;
+
+                assert((wave_count + num_to_move_from_prev) <= (fbank->padded_window_size * 2));
+                assert((fbank->prev_leftover_count + start_idx + num_to_move_from_prev) <= (fbank->padded_window_size * 2));
+
+                memmove(
+                    fbank->prev_leftover,
+                    &fbank->prev_leftover[fbank->prev_leftover_count + start_idx],
+                    num_to_move_from_prev * sizeof(float)
+                );
+                
+                memcpy(
+                    &fbank->prev_leftover[num_to_move_from_prev],
+                    wave,
+                    wave_count * sizeof(float)
+                );
+            }
             fbank->prev_leftover_count = wave_count - start_idx;
             return;
         }
@@ -164,7 +191,7 @@ void fbank_accept_waveform(OnlineFBank fbank, float *wave, size_t wave_count) {
 
         int res = rfft_forward(fbank->plan, rptr+1, 1.0);
         if(res != 0){
-            printf("Fail %d", res);
+            printf("fbank rfft failure %d", res);
             break;
         }
 
@@ -194,17 +221,36 @@ void fbank_accept_waveform(OnlineFBank fbank, float *wave, size_t wave_count) {
 
         // Log mel energies
         for(int mel=0; mel<fbank->opts.num_bins; mel++){
-            const float kEps = 1.1920928955078125e-07f;
             out[mel] = (float)log((double)MAX(kEps, out[mel]));
         }
         
+        fbank->temp_segment_head++;
+        fbank->temp_segment_avail++;
+        fbank->temp_segment_avail_f = fbank->temp_segment_avail;
+
+        fbank->temp_segment_head = fbank->temp_segment_head % fbank->temp_segments_y;
+    }
+
+    fbank->prev_leftover_count = 0;
+}
+
+bool fbank_flush(OnlineFBank fbank) {
+    ssize_t min = -(fbank->opts.pull_segment_count * 3);
+    if(fbank->temp_segment_avail_f < min) return false;
+
+    while(fbank->temp_segment_avail < fbank->opts.pull_segment_count) {
+        float *out = &fbank->temp_segments[fbank->temp_segment_head * fbank->opts.num_bins];
+        for(int mel=0; mel<fbank->opts.num_bins; mel++){
+            out[mel] = (float)log((double)kEps);
+        }
+
         fbank->temp_segment_head++;
         fbank->temp_segment_avail++;
 
         fbank->temp_segment_head = fbank->temp_segment_head % fbank->temp_segments_y;
     }
 
-    fbank->prev_leftover_count = 0;
+    return true;
 }
 
 bool fbank_pull_segments(OnlineFBank fbank, float *output, size_t output_count) {
@@ -226,6 +272,7 @@ bool fbank_pull_segments(OnlineFBank fbank, float *output, size_t output_count) 
     fbank->temp_segment_tail += fbank->opts.pull_segment_step;
     fbank->temp_segment_tail = fbank->temp_segment_tail % fbank->temp_segments_y;
     fbank->temp_segment_avail -= fbank->opts.pull_segment_step;
+    fbank->temp_segment_avail_f -= fbank->opts.pull_segment_step;
 
     return true;
 }
