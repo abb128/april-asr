@@ -21,7 +21,11 @@ struct AprilASRSession_i {
 
     TensorF eout;
 
+    size_t context_size;
     TensorI context;
+    TensorF dout;
+    bool dout_init;
+
     TensorF logits;
 
     int64_t active_tokens[64];

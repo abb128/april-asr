@@ -21,6 +21,7 @@ add_library(aprilasr
   src/params.c
   src/fbank.c
   src/ort_util.c
+  src/file/model_file.c
   src/fft/pocketfft.c
 )
 add_executable(main example.cpp)

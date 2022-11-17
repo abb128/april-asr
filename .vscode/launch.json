@@ -7,7 +7,7 @@
             "name": "Launch",
             "env": {"LD_LIBRARY_PATH": "/home/alex/Downloads/onnxruntime-linux-x64-1.13.1/lib/"},
             "program": "${workspaceFolder}/build/main",
-            "args": ["/home/alex/Music/emerald2.wav", "/run/media/alex/EncSSD/ASR/own-py/model2-sim"],
+            "args": ["/home/alex/Music/emerald2.wav", "/run/media/alex/EncSSD/ASR/own-py/aprilv0_en-us.april"],
             "cwd": "${workspaceFolder}"
         },
     ]

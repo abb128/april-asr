@@ -22,12 +22,14 @@ AprilASRSession aas_create_session(
     }
 
     aas->eout = alloc_tensor3f(mi, model->eout_dim);
+    aas->dout = alloc_tensor3f(mi, model->dout_dim);
 
     aas->context = alloc_tensor2i(mi, model->context_dim);
-    for(int i=0; i<SHAPE_PRODUCT2(model->context_dim); i++) aas->context.data[i] = 0;
+    aas->context_size = model->context_dim[1];
 
     aas->logits = alloc_tensor3f(mi, model->logits_dim);
 
+    aas->dout_init = false;
     aas->hc_use_0 = false;
     aas->active_token_head = 0;
 
@@ -69,7 +71,10 @@ void aas_free(AprilASRSession session) {
 const char* encoder_input_names[] = {"x", "h", "c"};
 const char* encoder_output_names[] = {"encoder_out", "next_h", "next_c"};
 
-const char* joiner_input_names[] = {"context", "encoder_out"};
+const char* decoder_input_names[] = {"context"};
+const char* decoder_output_names[] = {"decoder_out"};
+
+const char* joiner_input_names[] = {"encoder_out", "decoder_out"};
 const char* joiner_output_names[] = {"logits"};
 
 // Runs encoder on current data in aas->x
@@ -92,11 +97,27 @@ void aas_run_encoder(AprilASRSession aas){
                                     encoder_output_names, 3, outputs));
 }
 
-// Runs joiner on current data in aas->context and aas->eout
+// Runs decoder on current data in aas->context
+void aas_run_decoder(AprilASRSession aas){
+    aas->hc_use_0 = !aas->hc_use_0;
+    const OrtValue *inputs[] = {
+        aas->context.tensor
+    };
+
+    OrtValue *outputs[] = {
+        aas->dout.tensor
+    };
+
+    ORT_ABORT_ON_ERROR(g_ort->Run(aas->model->decoder, NULL,
+                                    decoder_input_names, inputs, 1,
+                                    decoder_output_names, 1, outputs));
+}
+
+// Runs joiner on current data in aas->eout and aas->dout
 void aas_run_joiner(AprilASRSession aas){
     const OrtValue *inputs[] = {
-        aas->context.tensor,
-        aas->eout.tensor
+        aas->eout.tensor,
+        aas->dout.tensor
     };
     
     OrtValue *outputs[] = {
@@ -106,6 +127,23 @@ void aas_run_joiner(AprilASRSession aas){
     ORT_ABORT_ON_ERROR(g_ort->Run(aas->model->joiner, NULL,
                                     joiner_input_names, inputs, 2,
                                     joiner_output_names, 1, outputs));
+}
+
+void aas_update_context(AprilASRSession aas, int64_t new_token){
+    if(aas->context_size == 2) {
+        aas->context.data[0] = aas->context.data[1];
+        aas->context.data[1] = new_token;
+    } else {
+        size_t last_idx = aas->context_size - 1;
+        memmove(
+            &aas->context.data[0], &aas->context.data[1],
+            last_idx * sizeof(int64_t)
+        );
+
+        aas->context.data[last_idx] = new_token;
+    }
+    
+    aas_run_decoder(aas);
 }
 
 // Processes current data in aas->logits. Returns true if new token was
@@ -146,8 +184,7 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
     if(!is_blank) {
         aas->runs_since_emission = 0;
 
-        aas->context.data[0] = aas->context.data[1];
-        aas->context.data[1] = (int64_t)max_idx;
+        aas_update_context(aas, (int64_t)max_idx);
 
         aas->handler(aas->userdata, APRIL_RESULT_RECOGNITION_FINAL, 1, &token);
     } else {
@@ -171,6 +208,13 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
 }
 
 bool aas_infer(AprilASRSession aas){
+    if(!aas->dout_init) {
+        for(int i=0; i<aas->context_size; i++)
+            aas_update_context(aas, aas->model->params.blank_id);
+        
+        aas->dout_init = true;
+    }
+
     bool any_inferred = false;
     while(fbank_pull_segments( aas->fbank, aas->x.data, sizeof(float)*SHAPE_PRODUCT3(aas->model->x_dim) )){
         aas_run_encoder(aas);
@@ -179,7 +223,7 @@ bool aas_infer(AprilASRSession aas){
         for(int i=0; i<8; i++){
             early_emit -= 1.0f;
             aas_run_joiner(aas);
-            if(!aas_process_logits(aas, early_emit > 0.0f ? early_emit : 0.0f)) break;
+            if(aas_process_logits(aas, early_emit > 0.0f ? early_emit : 0.0f)) break;
         }
         
         any_inferred = true;

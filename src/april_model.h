@@ -10,6 +10,7 @@ struct AprilASRModel_i {
     OrtSessionOptions* session_options;
 
     OrtSession* encoder;
+    OrtSession* decoder;
     OrtSession* joiner;
 
     // The comment numbers are for reference only, it may differ
@@ -18,6 +19,7 @@ struct AprilASRModel_i {
     int64_t h_dim[3];       // (12, 1, 512)
     int64_t c_dim[3];       // (12, 1, 1024)
     int64_t eout_dim[3];    // (1, 1, 512)
+    int64_t dout_dim[3];    // (1, 1, 512)
     int64_t context_dim[2]; // (1, 2)
     int64_t logits_dim[3];  // (1, 1, 500)
 
