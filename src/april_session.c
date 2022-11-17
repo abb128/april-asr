@@ -100,7 +100,6 @@ void aas_run_encoder(AprilASRSession aas){
 
 // Runs decoder on current data in aas->context
 void aas_run_decoder(AprilASRSession aas){
-    aas->hc_use_0 = !aas->hc_use_0;
     const OrtValue *inputs[] = {
         aas->context.tensor
     };
