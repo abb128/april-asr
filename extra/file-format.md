@@ -70,7 +70,6 @@ struct Params {
     Token tokens[]; // of size `token_count`
 };
 
-
 struct Token {
     int32_t token_length;
     char token[]; // of size `token_length`

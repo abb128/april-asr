@@ -4,7 +4,8 @@ Currently only `lstm_transducer_stateless2` model is tested and supported.
 
 To export, copy export-april.py to the `lstm_transducer_stateless2` directory and call it as instructed.
 
-For example: ```
+For example:
+```sh
 $ lstm_transducer_stateless2/export-april.py \
     --epoch 30 \
     --avg 15 \
