@@ -2,8 +2,10 @@
 # flake8: noqa
 #
 # Copyright 2021-2022 Xiaomi Corporation (Author: Fangjun Kuang, Zengwei Yao)
+# Author: abb128
 #
-# See ../../../../LICENSE for clarification regarding multiple authors
+# See https://github.com/k2-fsa/icefall/blob/b3920e5/LICENSE for clarification
+# regarding multiple authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,13 +37,9 @@ Export to ONNX format
   --description "This is an example model"
 
 It will generate the following file in the given `exp_dir`.
-    - model.april
+    - (name)_(language).april
 
-Please see ./streaming-onnx-decode.py for usage of the generated files
-
-Check
-https://github.com/k2-fsa/sherpa-onnx
-for how to use the exported models outside of icefall.
+This model may be loaded and used with libapril
 """
 
 import argparse

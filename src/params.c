@@ -42,10 +42,10 @@ bool read_params_from_fd(ModelParameters *params, FILE *fd) {
 
     params->frame_shift_ms  = mfu_read_i32(fd);
     params->frame_length_ms = mfu_read_i32(fd);
-    params->round_pow2      = mfu_read_i32(fd);
+    params->round_pow2      = mfu_read_i32(fd) != 0;
     params->mel_low         = mfu_read_i32(fd);
     params->mel_high        = mfu_read_i32(fd);
-    params->snip_edges      = mfu_read_i32(fd);
+    params->snip_edges      = mfu_read_i32(fd) != 0;
 
     params->token_count  = mfu_read_i32(fd);
     params->blank_id     = mfu_read_i32(fd);
