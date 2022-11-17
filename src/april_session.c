@@ -56,6 +56,7 @@ void aas_free(AprilASRSession session) {
     free_tensorf(&session->logits);
     free_tensori(&session->context);
     free_tensorf(&session->eout);
+    free_tensorf(&session->dout);
     for(int i=0; i<2; i++) {
         free_tensorf(&session->c[i]);
         free_tensorf(&session->h[i]);

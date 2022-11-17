@@ -75,6 +75,7 @@ void aam_free(AprilASRModel model) {
     free_params(&model->params);
 
     g_ort->ReleaseSession(model->joiner);
+    g_ort->ReleaseSession(model->decoder);
     g_ort->ReleaseSession(model->encoder);
     g_ort->ReleaseSessionOptions(model->session_options);
     g_ort->ReleaseEnv(model->env);
