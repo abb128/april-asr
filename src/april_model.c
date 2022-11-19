@@ -12,7 +12,6 @@ AprilASRModel aam_create_model(const char *model_path) {
     assert(model_type(file) == MODEL_LSTM_TRANSDUCER_STATELESS);
     assert(model_network_count(file) == 3);
 
-    LOG_INFO("aam: using model %s", model_name(file));
 
 
     AprilASRModel aam = (AprilASRModel)calloc(1, sizeof(struct AprilASRModel_i));
@@ -30,8 +29,7 @@ AprilASRModel aam_create_model(const char *model_path) {
 
     model_read_params(file, &aam->params);
 
-    free_model(file);
-    
+    transfer_strings_and_free_model(file, &aam->name, &aam->description, &aam->language);
 
     assert(input_count(aam->encoder)  == 3);
     assert(output_count(aam->encoder) == 3);
@@ -69,10 +67,25 @@ AprilASRModel aam_create_model(const char *model_path) {
     assert(aam->x_dim[2] == aam->fbank_opts.num_bins);
     assert(aam->logits_dim[2] == aam->params.token_count);
 
+    LOG_INFO("aam: loaded model %s", aam->name);
+
     return aam;
 }
 
+const char *aam_get_name(AprilASRModel model) { return model->name; }
+const char *aam_get_description(AprilASRModel model) { return model->description; }
+const char *aam_get_language(AprilASRModel model) { return model->language; }
+
+size_t aam_get_sample_rate(AprilASRModel model) {
+    return model->fbank_opts.sample_freq;
+}
+
+
 void aam_free(AprilASRModel model) {
+    free(model->name);
+    free(model->description);
+    free(model->language);
+
     free_params(&model->params);
 
     g_ort->ReleaseSession(model->joiner);

@@ -33,6 +33,12 @@ size_t model_network_count(ModelFile model);
 size_t model_network_size(ModelFile model, size_t index);
 size_t model_network_read(ModelFile model, size_t index, void *data, size_t data_len);
 
+// Transfers ownership of strings if provided, and frees model.
+// If a char ** was provided, the caller must take responsibility to
+// eventually free the char * that was given.
+void transfer_strings_and_free_model(ModelFile model, char **out_name, char **out_desc, char **out_lang);
+
+// Equivalent to transfer_strings_and_free_model(model, NULL, NULL, NULL)
 void free_model(ModelFile model);
 
 #endif

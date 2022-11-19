@@ -19,6 +19,12 @@ void aam_api_init(void);
 // Creates a model given a path. May return NULL if loading failed.
 AprilASRModel aam_create_model(const char *model_path);
 
+// Get the name/desc/lang of the model. The pointers are valid for the
+// lifetime of the model (i.e. until aam_free is called on the model)
+const char *aam_get_name(AprilASRModel model);
+const char *aam_get_description(AprilASRModel model);
+const char *aam_get_language(AprilASRModel model);
+
 // Get the sample rate of model in Hz. For example, may return 16000
 size_t aam_get_sample_rate(AprilASRModel model);
 

@@ -25,6 +25,10 @@ struct AprilASRModel_i {
 
     FBankOptions fbank_opts;
     ModelParameters params;
+
+    char *name;
+    char *description;
+    char *language;
 };
 
 #endif

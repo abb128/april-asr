@@ -82,6 +82,12 @@ int main(int argc, char *argv[]){
 
     aam_api_init();
     AprilASRModel model = aam_create_model(argv[2]);
+    assert(model != NULL);
+    printf("Model name: %s\n", aam_get_name(model));
+    printf("Model desc: %s\n", aam_get_description(model));
+    printf("Model lang: %s\n", aam_get_language(model));
+    printf("Model samplerate: %d\n\n", aam_get_sample_rate(model));
+
     AprilASRSession session = aas_create_session(model, handler, (void*)ExampleState, NULL);
     if(argv[1][0] == '-' && argv[1][1] == 0) {
         // read from stdin

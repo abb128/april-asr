@@ -167,10 +167,29 @@ size_t model_network_read(ModelFile model, size_t index, void *data, size_t data
     return fread(data, 1, data_len, fd);
 }
 
-void free_model(ModelFile model) {
+void transfer_strings_and_free_model(ModelFile model, char **out_name, char **out_desc, char **out_lang) {
     fclose(model->fd);
-    free(model->name);
-    free(model->description);
+
+    if(out_name != NULL){
+        *out_name = model->name;
+    }else{
+        free(model->name);
+    }
+
+    if(out_desc != NULL){
+        *out_desc = model->description;
+    }else{
+        free(model->description);
+    }
+
+    if(out_lang != NULL){
+        *out_lang = (char *)malloc(strlen(model->language) + 1);
+        strcpy(*out_lang, model->language);
+    }
 
     free(model);
+}
+
+void free_model(ModelFile model) {
+    transfer_strings_and_free_model(model, NULL, NULL, NULL);
 }
