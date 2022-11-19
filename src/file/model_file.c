@@ -7,6 +7,7 @@
 #include "params.h"
 #include "file/model_file.h"
 #include "file/util.h"
+#include "log.h"
 
 #define MAX_NETWORKS 8
 
@@ -49,14 +50,14 @@ bool read_metadata(ModelFile model) {
     fread(magic, 1, 8, fd);
 
     if(memcmp(magic, MODEL_EXPECTED_MAGIC, 8) != 0) {
-        printf("AprilModel: magic check failed\n");
+        LOG_INFO("Magic check failed");
         return false;
     }
 
     uint32_t version = mfu_read_u32(fd);
     model->version = version;
     if(version != 1) {
-        printf("AprilModel: unsupported model version %u\n", version);
+        LOG_WARNING("Unsupported model version %u", version);
         return false;
     }
 
@@ -82,20 +83,20 @@ bool read_header(ModelFile model) {
 
     model->type = (ModelType)mfu_read_u32(fd); // TODO: check network count equal LSTM_TRANSDUCER_STATELESS_NETWORK_COUNT
     if(!((model->type > MODEL_UNKNOWN) && (model->type < MODEL_MAX))) {
-        printf("AprilModel: unexpected model type %u\n", model->type);
+        LOG_WARNING("Unexpected model type %u", model->type);
         return false;
     }
 
     model->params_offset = mfu_read_u64(fd);
     model->params_size = mfu_read_u64(fd);
     if((model->params_offset + model->params_size) > model->file_size) {
-        printf("AprilModel: params out of bounds of file\n");
+        LOG_WARNING("Params out of bounds of file");
         return false;
     }
 
     model->num_networks = mfu_read_u64(fd);
     if(model->num_networks > MAX_NETWORKS) {
-        printf("AprilModel: too many networks %llu\n", model->num_networks);
+        LOG_WARNING("Too many networks %llu", model->num_networks);
         return false;
     }
 
@@ -103,7 +104,7 @@ bool read_header(ModelFile model) {
         model->networks[i].offset = mfu_read_u64(fd);
         model->networks[i].size = mfu_read_u64(fd);
         if((model->networks[i].offset + model->networks[i].size) > model->file_size) {
-            printf("AprilModel: network %d out of bounds of file\n", i);
+            LOG_WARNING("Network %d out of bounds of file", i);
             return false;
         }
     }

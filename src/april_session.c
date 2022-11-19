@@ -25,6 +25,8 @@ AprilASRSession aas_create_session(
     aas->dout = alloc_tensor3f(mi, model->dout_dim);
 
     aas->context = alloc_tensor2i(mi, model->context_dim);
+
+    assert(model->context_dim[0] == 1);
     aas->context_size = model->context_dim[1];
 
     aas->logits = alloc_tensor3f(mi, model->logits_dim);

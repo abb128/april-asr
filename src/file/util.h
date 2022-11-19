@@ -2,6 +2,7 @@
 #define _APRIL_MODEL_FILE_UTIL
 
 #include <stdio.h>
+#include "log.h"
 
 static inline uint32_t mfu_read_u32(FILE *fd) {
     uint32_t v;
@@ -34,9 +35,9 @@ static inline int64_t mfu_read_i64(FILE *fd) {
 // Must be freed manually with free(v)
 static inline char *mfu_alloc_read_string(FILE *fd) {
     uint64_t size = mfu_read_u64(fd);
-    char *v = (char *)calloc(1, size + 1);
+    char *v = (char *)malloc(size + 1);
     if(v == NULL) {
-        printf("mfu: failed allocating string of size %llu, file position %llu\n", size, ftell(fd));
+        LOG_CRITICAL("failed allocating string of size %llu, file position %llu", size, ftell(fd));
         assert(false);
     }
     fread(v, 1, size, fd);

@@ -7,8 +7,9 @@
 #include <string.h>
 #include "params.h"
 #include "file/util.h"
+#include "log.h"
 
-#define ASSERT_OR_RETURN_FALSE(expr) if(!(expr)) { printf("Params: assertion " #expr " failed, line %d\n", __LINE__); return false; }
+#define ASSERT_OR_RETURN_FALSE(expr) if(!(expr)) { LOG_WARNING("Params: assertion " #expr " failed, line %d", __LINE__); return false; }
 
 char *get_token(ModelParameters *params, size_t token_index){
     return &params->tokens[params->token_length * token_index];
@@ -30,7 +31,7 @@ bool read_params_from_fd(ModelParameters *params, FILE *fd) {
     fread(magic, 1, 8, fd);
 
     if(memcmp(magic, PARAMS_EXPECTED_MAGIC, 8) != 0) {
-        printf("Params: magic check failed\n");
+        LOG_INFO("magic check failed for params");
         return false;
     }
 
@@ -50,7 +51,6 @@ bool read_params_from_fd(ModelParameters *params, FILE *fd) {
     params->token_count  = mfu_read_i32(fd);
     params->blank_id     = mfu_read_i32(fd);
 
-    ASSERT_OR_RETURN_FALSE(params->batch_size == 1);
     ASSERT_OR_RETURN_FALSE(params->batch_size == 1);
     ASSERT_OR_RETURN_FALSE((params->segment_size > 0) && (params->segment_size < 100));
     ASSERT_OR_RETURN_FALSE((params->segment_step > 0) && (params->segment_step < 100) && (params->segment_step <= params->segment_size));

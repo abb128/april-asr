@@ -5,6 +5,7 @@
 #include <assert.h>
 #include "onnxruntime_c_api.h"
 #include "file/model_file.h"
+#include "log.h"
 
 extern const OrtApi* g_ort;
 
@@ -13,15 +14,15 @@ extern const OrtApi* g_ort;
     OrtStatus* onnx_status = (expr);                         \
     if (onnx_status != NULL) {                               \
       const char* msg = g_ort->GetErrorMessage(onnx_status); \
-      fprintf(stderr, "ONNX: %s\n", msg);                    \
+      LOG_CRITICAL("ONNX: %s", msg);                       \
       g_ort->ReleaseStatus(onnx_status);                     \
       abort();                                               \
     }                                                        \
   } while (0);
 
-#define PRINT_SHAPE1(MSG, shape) printf(MSG "(%d,)\n", shape[0])
-#define PRINT_SHAPE2(MSG, shape) printf(MSG "(%d, %d)\n", shape[0], shape[1])
-#define PRINT_SHAPE3(MSG, shape) printf(MSG "(%d, %d, %d)\n", shape[0], shape[1], shape[2])
+#define PRINT_SHAPE1(MSG, shape) LOG_DEBUG(MSG "(%d,)", shape[0])
+#define PRINT_SHAPE2(MSG, shape) LOG_DEBUG(MSG "(%d, %d)", shape[0], shape[1])
+#define PRINT_SHAPE3(MSG, shape) LOG_DEBUG(MSG "(%d, %d, %d)", shape[0], shape[1], shape[2])
 
 #define SHAPE_PRODUCT1(shape) (shape[0])
 #define SHAPE_PRODUCT2(shape) (shape[0] * shape[1])

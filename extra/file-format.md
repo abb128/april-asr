@@ -4,6 +4,10 @@ The file contains a version, a header containing name, description and
 model kind, and offsets. The rest of the file contains the networks and
 the parameters.
 
+All integers are stored in little-endian format.
+
+Networks are ONNX models with static dimensions, no dynamic axes.
+
 Some structures:
 ```c
 struct File {
@@ -50,11 +54,14 @@ struct ArchiveFileEntry {
 
 ## params
 
+All integers are also in little-endian format
+
 ```c
 struct Params {
     char magic[8]; // "PARAMS\0\0"
-    int32_t batch_size;
-    int32_t segment_size;
+    int32_t batch_size; // currently required to be 1
+    int32_t segment_size; // 100 > segment_size > 0
+    int32_t segment_step; // segment_size >= segment_step > 0
     int32_t mel_features;
     int32_t samplerate;
     int32_t frame_shift_ms;

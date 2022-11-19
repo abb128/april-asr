@@ -5,7 +5,7 @@
             "type": "lldb",
             "request": "launch",
             "name": "Launch",
-            "env": {"LD_LIBRARY_PATH": "/home/alex/Downloads/onnxruntime-linux-x64-1.13.1/lib/"},
+            "env": {"LD_LIBRARY_PATH": "/home/alex/Downloads/onnxruntime-linux-x64-1.13.1/lib/", "APRIL_LOG_LEVEL": "DEBUG"},
             "program": "${workspaceFolder}/build/main",
             "args": ["/home/alex/Music/emerald2.wav", "/run/media/alex/EncSSD/ASR/own-py/aprilv0_en-us.april"],
             "cwd": "${workspaceFolder}"

@@ -1,17 +1,18 @@
 #include "file/model_file.h"
 #include "april_model.h"
+#include "log.h"
 
 AprilASRModel aam_create_model(const char *model_path) {
     ModelFile file = model_read(model_path);
     if(file == NULL) {
-        printf("aam: failed to read file\n");
+        LOG_ERROR("aam: failed to read file");
         return NULL;
     }
 
     assert(model_type(file) == MODEL_LSTM_TRANSDUCER_STATELESS);
     assert(model_network_count(file) == 3);
 
-    printf("aam: using model %s\n", model_name(file));
+    LOG_INFO("aam: using model %s", model_name(file));
 
 
     AprilASRModel aam = (AprilASRModel)calloc(1, sizeof(struct AprilASRModel_i));

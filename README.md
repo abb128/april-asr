@@ -27,3 +27,4 @@ TODO:
 * Figure out licensing
 * Language model
 * VAD
+* Tensors are calloc'ed when could be malloc'ed

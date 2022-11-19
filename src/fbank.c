@@ -6,6 +6,7 @@
 #include <string.h>
 #include "fbank.h"
 #include "fft/pocketfft.h"
+#include "log.h"
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
@@ -138,7 +139,7 @@ OnlineFBank make_fbank(FBankOptions opts) {
 void fbank_accept_waveform(OnlineFBank fbank, const float *wave, size_t wave_count) {
     for(ssize_t i=0;; i++) {
         if((fbank->temp_segment_avail + 1) > fbank->temp_segments_y){
-            printf("fbank ran out of space. Please call fbank_pull_segments. Can't eat wave\n", i);
+            LOG_WARNING("fbank ran out of space. Please call fbank_pull_segments. Can't eat wave");
             return;
         }
 
@@ -191,7 +192,7 @@ void fbank_accept_waveform(OnlineFBank fbank, const float *wave, size_t wave_cou
 
         int res = rfft_forward(fbank->plan, rptr+1, 1.0);
         if(res != 0){
-            printf("fbank rfft failure %d", res);
+            LOG_ERROR("fbank rfft failure %d", res);
             break;
         }
 
