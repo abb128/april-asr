@@ -25,13 +25,7 @@ void aam_api_init(void){
 
     g_ort = OrtGetApiBase()->GetApi(ORT_API_VERSION);
     if (!g_ort) {
-        LOG_CRITICAL("Failed to init ONNX Runtime engine!");
+        LOG_ERROR("Failed to init ONNX Runtime engine!");
         exit(-1);
     }
-
-    LOG_DEBUG("This is how a debug log looks like. %d", 123456);
-    LOG_INFO("This is how an info log looks like. %d", 123456);
-    LOG_WARNING("This is how a warning log looks like. %d", 123456);
-    LOG_ERROR("This is how an error log looks like. %d", 123456);
-    LOG_CRITICAL("This is how a critical log looks like. %d", 123456);
 }

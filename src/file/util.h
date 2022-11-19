@@ -37,8 +37,8 @@ static inline char *mfu_alloc_read_string(FILE *fd) {
     uint64_t size = mfu_read_u64(fd);
     char *v = (char *)malloc(size + 1);
     if(v == NULL) {
-        LOG_CRITICAL("failed allocating string of size %llu, file position %llu", size, ftell(fd));
-        assert(false);
+        LOG_ERROR("failed allocating string of size %llu, file position %llu", size, ftell(fd));
+        exit(-1);
     }
     fread(v, 1, size, fd);
     v[size] = '\0';

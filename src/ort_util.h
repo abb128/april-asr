@@ -14,7 +14,7 @@ extern const OrtApi* g_ort;
     OrtStatus* onnx_status = (expr);                         \
     if (onnx_status != NULL) {                               \
       const char* msg = g_ort->GetErrorMessage(onnx_status); \
-      LOG_CRITICAL("ONNX: %s", msg);                       \
+      LOG_ERROR("ONNX: %s", msg);                            \
       g_ort->ReleaseStatus(onnx_status);                     \
       abort();                                               \
     }                                                        \
