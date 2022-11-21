@@ -40,15 +40,15 @@ AprilASRModel aam_create_model(const char *model_path) {
     assert(input_count(aam->joiner)  == 2);
     assert(output_count(aam->joiner) == 1);
 
-    assert(input_dims(aam->encoder, 0, aam->x_dim, 3) == 3);
-    assert(input_dims(aam->encoder, 1, aam->h_dim, 3) == 3);
-    assert(input_dims(aam->encoder, 2, aam->c_dim, 3) == 3);
-    assert(output_dims(aam->encoder, 0, aam->eout_dim, 3) == 3);
+    input_dims(aam->encoder, 0, aam->x_dim, 3);
+    input_dims(aam->encoder, 1, aam->h_dim, 3);
+    input_dims(aam->encoder, 2, aam->c_dim, 3);
+    output_dims(aam->encoder, 0, aam->eout_dim, 3);
 
-    assert(input_dims(aam->decoder, 0, aam->context_dim, 2) == 2);
-    assert(output_dims(aam->decoder, 0, aam->dout_dim, 3) == 3);
+    input_dims(aam->decoder, 0, aam->context_dim, 2);
+    output_dims(aam->decoder, 0, aam->dout_dim, 3);
 
-    assert(output_dims(aam->joiner, 0, aam->logits_dim, 3) == 3);
+    output_dims(aam->joiner, 0, aam->logits_dim, 3);
 
     aam->fbank_opts.sample_freq        = aam->params.sample_rate;
     aam->fbank_opts.num_bins           = aam->params.mel_features;

@@ -18,6 +18,15 @@ $ ./main ../example.wav
 ```
 
 
+If you get this error:
+```
+error: expected ‘)’ before ‘__FILE_NAME__’
+   33 | #define LOCATION __FILE_NAME__ ":" S2(__LINE__)
+      |                  ^~~~~~~~~~~~~
+```
+you are running an old version of gcc. Please install gcc 12+ or clang 13+
+
+
 
 TODO:
 * Better error handling
@@ -28,3 +37,9 @@ TODO:
 * Language model
 * VAD
 * Tensors are calloc'ed when could be malloc'ed
+* linebreak when silence for a while
+* longer partial/final rather than single tokens
+* could speed/slow audio for performance and accuracy
+* raspberry pi support, NCNN?
+* __FILE_NAME__ alternative
+* findonnxruntime only does linux-x64, need arm64 as well

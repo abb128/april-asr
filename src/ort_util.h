@@ -110,7 +110,8 @@ static inline size_t output_count(OrtSession *session) {
 static inline void load_network_from_model_file(const OrtEnv *env, const OrtSessionOptions *options, ModelFile file, size_t index, OrtSession **session) {
     size_t network_size = model_network_size(file, index);
     void *network = malloc(network_size);
-    assert(model_network_read(file, index, network, network_size) == network_size);
+    size_t r = model_network_read(file, index, network, network_size);
+    assert(r == network_size);
     ORT_ABORT_ON_ERROR(g_ort->CreateSessionFromArray(env, network, network_size, options, session));
     free(network);
 }
