@@ -1,3 +1,7 @@
+# april-asr
+
+
+
 Requires ONNXRuntime v1.13.1
 
 put onnx v1.13.1 in lib
@@ -37,9 +41,9 @@ TODO:
 * Language model
 * VAD
 * Tensors are calloc'ed when could be malloc'ed
-* linebreak when silence for a while
-* longer partial/final rather than single tokens
 * could speed/slow audio for performance and accuracy
 * raspberry pi support, NCNN?
 * __FILE_NAME__ alternative
 * findonnxruntime only does linux-x64, need arm64 as well
+* IOBinding instead of OrtValue*
+* LM, Beam search

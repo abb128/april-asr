@@ -2,6 +2,8 @@
 #include "april_model.h"
 #include "log.h"
 
+#define ASSERT_OR_RETURN_NULL(expr) if(!(expr)) { LOG_WARNING("Model: assertion " #expr " failed, line %d", __LINE__); return NULL; }
+#define ASSERT_OR_FREE_AAM_AND_RETURN_NULL(aam, expr) if(!(expr)) { LOG_WARNING("Model: assertion " #expr " failed, line %d", __LINE__); aam_free(aam); return NULL; }
 AprilASRModel aam_create_model(const char *model_path) {
     ModelFile file = model_read(model_path);
     if(file == NULL) {
@@ -9,15 +11,22 @@ AprilASRModel aam_create_model(const char *model_path) {
         return NULL;
     }
 
-    assert(model_type(file) == MODEL_LSTM_TRANSDUCER_STATELESS);
-    assert(model_network_count(file) == 3);
-
+    if((model_type(file) != MODEL_LSTM_TRANSDUCER_STATELESS) || (model_network_count(file) != 3)) {
+        LOG_WARNING("Model has unknown model type, or the wrong number of networks");
+        free_model(file);
+        return NULL;
+    }
 
 
     AprilASRModel aam = (AprilASRModel)calloc(1, sizeof(struct AprilASRModel_i));
     
     ORT_ABORT_ON_ERROR(g_ort->CreateEnv(ORT_LOGGING_LEVEL_WARNING, "aam", &aam->env));
-    assert(aam->env != NULL);
+    if(aam->env == NULL) {
+        LOG_ERROR("Creating ORT environment failed!");
+        free_model(file);
+        aam_free(aam);
+        return NULL;
+    }
 
     ORT_ABORT_ON_ERROR(g_ort->CreateSessionOptions(&aam->session_options));
     ORT_ABORT_ON_ERROR(g_ort->SetIntraOpNumThreads(aam->session_options, 1));
@@ -31,14 +40,14 @@ AprilASRModel aam_create_model(const char *model_path) {
 
     transfer_strings_and_free_model(file, &aam->name, &aam->description, &aam->language);
 
-    assert(input_count(aam->encoder)  == 3);
-    assert(output_count(aam->encoder) == 3);
+    ASSERT_OR_FREE_AAM_AND_RETURN_NULL(aam, input_count(aam->encoder)  == 3);
+    ASSERT_OR_FREE_AAM_AND_RETURN_NULL(aam, output_count(aam->encoder) == 3);
 
-    assert(input_count(aam->decoder) == 1);
-    assert(output_count(aam->decoder) == 1);
+    ASSERT_OR_FREE_AAM_AND_RETURN_NULL(aam, input_count(aam->decoder) == 1);
+    ASSERT_OR_FREE_AAM_AND_RETURN_NULL(aam, output_count(aam->decoder) == 1);
     
-    assert(input_count(aam->joiner)  == 2);
-    assert(output_count(aam->joiner) == 1);
+    ASSERT_OR_FREE_AAM_AND_RETURN_NULL(aam, input_count(aam->joiner)  == 2);
+    ASSERT_OR_FREE_AAM_AND_RETURN_NULL(aam, output_count(aam->joiner) == 1);
 
     input_dims(aam->encoder, 0, aam->x_dim, 3);
     input_dims(aam->encoder, 1, aam->h_dim, 3);
@@ -62,10 +71,10 @@ AprilASRModel aam_create_model(const char *model_path) {
     //aam->fbank_opts.snip_edges         = aam->params.snip_edges;
     aam->fbank_opts.snip_edges = true;
 
-    assert(aam->x_dim[0] == aam->params.batch_size);
-    assert(aam->x_dim[1] == aam->fbank_opts.pull_segment_count);
-    assert(aam->x_dim[2] == aam->fbank_opts.num_bins);
-    assert(aam->logits_dim[2] == aam->params.token_count);
+    ASSERT_OR_FREE_AAM_AND_RETURN_NULL(aam, aam->x_dim[0] == aam->params.batch_size);
+    ASSERT_OR_FREE_AAM_AND_RETURN_NULL(aam, aam->x_dim[1] == aam->fbank_opts.pull_segment_count);
+    ASSERT_OR_FREE_AAM_AND_RETURN_NULL(aam, aam->x_dim[2] == aam->fbank_opts.num_bins);
+    ASSERT_OR_FREE_AAM_AND_RETURN_NULL(aam, aam->logits_dim[2] == aam->params.token_count);
 
     LOG_INFO("aam: loaded model %s", aam->name);
 
@@ -82,6 +91,8 @@ size_t aam_get_sample_rate(AprilASRModel model) {
 
 
 void aam_free(AprilASRModel model) {
+    if(model == NULL) return;
+
     free(model->name);
     free(model->description);
     free(model->language);

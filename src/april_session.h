@@ -7,6 +7,8 @@
 #include "april_api.h"
 #include "fbank.h"
 
+#define MAX_ACTIVE_TOKENS 144
+
 struct AprilASRSession_i {
     AprilASRModel model;
     OnlineFBank fbank;
@@ -28,9 +30,11 @@ struct AprilASRSession_i {
 
     TensorF logits;
 
-    int64_t active_tokens[64];
+    AprilToken active_tokens[MAX_ACTIVE_TOKENS];
     size_t active_token_head;
+    size_t last_handler_call_head;
 
+    bool was_flushed;
     uint64_t runs_since_emission;
 
     AprilRecognitionResultHandler handler;

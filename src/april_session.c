@@ -1,3 +1,4 @@
+#include "log.h"
 #include "params.h"
 #include "april_session.h"
 
@@ -26,7 +27,11 @@ AprilASRSession aas_create_session(
 
     aas->context = alloc_tensor2i(mi, model->context_dim);
 
-    assert(model->context_dim[0] == 1);
+    if(model->context_dim[0] != 1) {
+        LOG_ERROR("Currently, only batch size 1 is supported. Got batch size %d", model->context_dim[0]);
+        aas_free(aas);
+        return NULL;
+    }
     aas->context_size = model->context_dim[1];
 
     aas->logits = alloc_tensor3f(mi, model->logits_dim);
@@ -35,6 +40,7 @@ AprilASRSession aas_create_session(
     aas->hc_use_0 = false;
     aas->active_token_head = 0;
 
+    aas->was_flushed = false;
     aas->runs_since_emission = 100;
 
     assert(aas->fbank          != NULL);
@@ -49,12 +55,18 @@ AprilASRSession aas_create_session(
 
     aas->handler = handler;
     aas->userdata = userdata;
-    assert(handler != NULL);
+    if(handler == NULL) {
+        LOG_ERROR("No handler provided! A handler is required, please provide a handler");
+        aas_free(aas);
+        return NULL;
+    }
 
     return aas;
 }
 
 void aas_free(AprilASRSession session) {
+    if(session == NULL) return;
+
     free_tensorf(&session->logits);
     free_tensori(&session->context);
     free_tensorf(&session->eout);
@@ -148,6 +160,40 @@ void aas_update_context(AprilASRSession aas, int64_t new_token){
     aas_run_decoder(aas);
 }
 
+
+void aas_finalize_tokens(AprilASRSession aas) {
+    if(aas->active_token_head  == 0) return;
+
+    aas->handler(
+        aas->userdata,
+        APRIL_RESULT_RECOGNITION_FINAL,
+        aas->active_token_head,
+        aas->active_tokens
+    );
+
+    aas->last_handler_call_head = aas->active_token_head;
+    aas->active_token_head = 0;
+}
+
+bool aas_emit_token(AprilASRSession aas, AprilToken *new_token, bool force){
+    if((!force) && (aas->last_handler_call_head == (aas->active_token_head + 1))
+        && (aas->active_tokens[aas->active_token_head].token == new_token->token)
+    ) {
+        return false;
+    }
+    aas->active_tokens[aas->active_token_head++] = *new_token;
+
+    aas->handler(
+        aas->userdata,
+        APRIL_RESULT_RECOGNITION_PARTIAL,
+        aas->active_token_head,
+        aas->active_tokens
+    );
+
+    aas->last_handler_call_head = aas->active_token_head;
+    return true;
+}
+
 // Processes current data in aas->logits. Returns true if new token was
 // added, else returns false if no new data is available. Updates
 // aas->context and aas->active_tokens. Uses basic greedy search algorithm.
@@ -188,7 +234,11 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
 
         aas_update_context(aas, (int64_t)max_idx);
 
-        aas->handler(aas->userdata, APRIL_RESULT_RECOGNITION_FINAL, 1, &token);
+        bool is_final = (aas->active_token_head >= (MAX_ACTIVE_TOKENS - 2))
+            || ((token.token[0] == ' ') && (aas->active_token_head >= (MAX_ACTIVE_TOKENS / 2)));
+
+        if(is_final) aas_finalize_tokens(aas);
+        aas_emit_token(aas, &token, true);
     } else {
         aas->runs_since_emission += 1;
 
@@ -196,13 +246,17 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
         // kill stray prediction
         max_val -= (float)(aas->runs_since_emission-1)/10.0f;
 
-        // If current token is blank, but it's reasonably confident, emit as partial
-        if(!is_equal_to_previous && (max_val > (blank_val - 4.0f))) {
-            aas->handler(aas->userdata, APRIL_RESULT_RECOGNITION_PARTIAL, 1, &token);
-        } else {
-            // Emit blank partial
-            const char *blank = "\0\0";
-            aas->handler(aas->userdata, APRIL_RESULT_RECOGNITION_PARTIAL, 0, NULL);
+        // If current token is blank, but it's reasonably confident, emit
+        bool reasonably_confident = (!is_equal_to_previous) && (max_val > (blank_val - 4.0f));
+        bool been_long_silence = aas->runs_since_emission >= 50;
+
+        if(reasonably_confident) {
+            if(aas_emit_token(aas, &token, false)) {
+                assert(aas->active_token_head > 0);
+                aas->active_token_head--;
+            }
+        } else if (been_long_silence) {
+            aas_finalize_tokens(aas);
         }
     }
 
@@ -240,6 +294,8 @@ void aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count) {
     assert(session != NULL);
     assert(pcm16 != NULL);
 
+    session->was_flushed = false;
+
     size_t head = 0;
     float wave[SEGSIZE];
 
@@ -260,8 +316,20 @@ void aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count) {
     }
 }
 
-
+const float ZEROS[SEGSIZE] = { 0 };
 void aas_flush(AprilASRSession session) {
+    if(session->was_flushed) return;
+
+    session->was_flushed = true;
+
     while(fbank_flush(session->fbank))
         aas_infer(session);
+
+    for(int i=0; i<2; i++)
+        fbank_accept_waveform(session->fbank, ZEROS, SEGSIZE);
+
+    while(fbank_flush(session->fbank))
+        aas_infer(session);
+    
+    aas_finalize_tokens(session);
 }

@@ -23,51 +23,21 @@ void handler(void *userdata, AprilResultType result, size_t count, const AprilTo
     assert(userdata == ExampleState);
     
     switch(result){
-        case APRIL_RESULT_RECOGNITION_FINAL: {
-            for(int i=0; i<backspace_needed; i++) fprintf(stderr, "\b");
-            for(int i=0; i<backspace_needed; i++) fprintf(stderr, " ");
-            for(int i=0; i<backspace_needed; i++) fprintf(stderr, "\b");
-            backspace_needed = 0;
-
-            for(int t=0; t<count; t++){
-                const char *text = tokens[t].token;
-                size_t text_size = strlen(text);
-                if((line_length > 48) && (text[0] == ' ')){
-                    fprintf(stderr, "\n");
-                    line_length = 0;
-                }
-
-                fprintf(stderr, "%s", text);
-                line_length += text_size;
-            }
-
+        case APRIL_RESULT_RECOGNITION_FINAL: 
+            printf("@ ");
             break;
-        }
-
-        case APRIL_RESULT_RECOGNITION_PARTIAL: {
-            for(int i=0; i<backspace_needed; i++) fprintf(stderr, "\b");
-            for(int i=0; i<backspace_needed; i++) fprintf(stderr, " ");
-            for(int i=0; i<backspace_needed; i++) fprintf(stderr, "\b");
-
-            backspace_needed = 0;
-
-            for(int t=0; t<count; t++){
-                const char *text = tokens[t].token;
-                size_t text_size = strlen(text);
-                if((line_length > 48) && (text[0] == ' ')) {
-
-                } else {
-                    backspace_needed += text_size;
-                    fprintf(stderr, "%s", text);
-                }
-            }
-            
+        case APRIL_RESULT_RECOGNITION_PARTIAL:
+            printf("- ");
             break;
-        }
-
         default:
             assert(false);
     }
+
+    for(int t=0; t<count; t++){
+        const char *text = tokens[t].token;
+        printf("%s", text);
+    }
+    printf("\n");
 }
 
 int main(int argc, char *argv[]){
