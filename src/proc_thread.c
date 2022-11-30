@@ -67,9 +67,10 @@ void pt_terminate(ProcThread thread) {
     if(thread->terminating) return;
 
     thread->terminating = true;
-    pt_raise(thread, PT_FLAG_KILL);
+    for(int i=0; i<8; i++) pt_raise(thread, PT_FLAG_KILL);
 
     int res;
+    // TODO: Sometimes hangs here
     if(thrd_join(thread->thrd, &res) != thrd_success){
         LOG_ERROR("Failed to join thread!");
         return;
@@ -104,7 +105,7 @@ int run_pt(void *userdata){
     for(;;){
         if(cnd_wait(&thread->cond, &thread->mutex) != thrd_success) {
             LOG_ERROR("Failed to wait for cond!");
-            continue;
+            return 2;
         }
 
         int flags = thread->flags;
@@ -112,16 +113,18 @@ int run_pt(void *userdata){
 
         if(mtx_unlock(&thread->mutex) != thrd_success) {
             LOG_ERROR("Failed to unlock mutex!");
-            return 1;
+            return 3;
         }
 
         if((flags & PT_FLAG_KILL) || (thread->terminating)) return 0;
 
         thread->callback(thread->userdata, flags);
 
+        if((thread->flags & PT_FLAG_KILL) || (thread->terminating)) return 0;
+
         if(mtx_lock(&thread->mutex) != thrd_success){
             LOG_ERROR("Failed to lock mutex! 1");
-            return 1;
+            return 4;
         }
     }
 }
