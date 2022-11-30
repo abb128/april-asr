@@ -64,7 +64,7 @@ int main(int argc, char *argv[]){
     AprilConfig config = {
         .handler = handler,
         .userdata = (void*)ExampleState,
-        .realtime = false
+        .flags = ARPIL_CONFIG_FLAG_SYNCHRONOUS
     };
 
     AprilASRSession session = aas_create_session(model, config);
@@ -176,15 +176,12 @@ int main(int argc, char *argv[]){
         for(int j=0; j<1; j++) {
             for(int i=0; i<sz1/BUFFER_SIZE; i++){
                 aas_feed_pcm16(session, &((short *)file_data)[i*(BUFFER_SIZE/2)], BUFFER_SIZE/2);
-                usleep((BUFFER_SIZE / 2) * 1000 / samples_per_msec);
             }
         }
         //for(int i=0; i<1; i++)
         //    aas_feed_pcm16(session, (short *)file_data, sz1/2);
 
         aas_flush(session);
-
-        sleep(15);
 
         printf("\ndone\n");
 

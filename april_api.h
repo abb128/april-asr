@@ -68,6 +68,12 @@ typedef struct AprilToken {
 // count may be 0, and if so then tokens may be NULL.
 typedef void(*AprilRecognitionResultHandler)(void*, AprilResultType, size_t, const AprilToken*);
 
+// If set, calls to `aas_feed_pcm16` and `aas_flush` will block and perform
+// expensive calculations, and the handler will be called on the same thread
+// that calls those functions. If not set, handler is called from another thread
+// whenever processing is finished.
+#define ARPIL_CONFIG_FLAG_SYNCHRONOUS 1
+
 typedef struct AprilConfig {
     // If all 0, will be ignored
     AprilSpeakerID speaker;
@@ -77,9 +83,7 @@ typedef struct AprilConfig {
     AprilRecognitionResultHandler handler;
     void *userdata;
 
-    // If set to true, will attempt to process audio in realtime and avoid
-    // lagging behind. This may result in reduced accuracy.
-    bool realtime; // TODO: stdbool.h requirement
+    int flags;
 } AprilConfig;
 
 // Creates a session with a given model. A model may have many sessions

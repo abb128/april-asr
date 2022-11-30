@@ -52,15 +52,17 @@ AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config) {
 
     aas->handler = config.handler;
     aas->userdata = config.userdata;
-    aas->realtime = config.realtime;
+    aas->sync = (config.flags & ARPIL_CONFIG_FLAG_SYNCHRONOUS) != 0;
     if(aas->handler == NULL) {
         LOG_ERROR("No handler provided! A handler is required, please provide a handler");
         aas_free(aas);
         return NULL;
     }
 
-    aas->provider = ap_create();
-    aas->thread = pt_create(run_aas_callback, aas);
+    if(!aas->sync){
+        aas->provider = ap_create();
+        aas->thread = pt_create(run_aas_callback, aas);
+    }
 
     return aas;
 }
@@ -293,7 +295,10 @@ bool aas_infer(AprilASRSession aas){
     return any_inferred;
 }
 
+void _aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count);
 void aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count) {
+    if(session->sync) return _aas_feed_pcm16(session, pcm16, short_count);
+
     ap_push_audio(session->provider, pcm16, short_count);
     pt_raise(session->thread, PT_FLAG_AUDIO);
 }
@@ -333,7 +338,10 @@ void _aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count) 
     fflush(fd);
 }
 
+void _aas_flush(AprilASRSession session);
 void aas_flush(AprilASRSession session) {
+    if(session->sync) return _aas_flush(session);
+    
     pt_raise(session->thread, PT_FLAG_FLUSH);
 }
 

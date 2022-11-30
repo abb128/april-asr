@@ -81,6 +81,8 @@ void pt_terminate(ProcThread thread) {
 }
 
 void pt_free(ProcThread thread) {
+    if(thread == NULL) return;
+    
     pt_terminate(thread);
 
     mtx_destroy(&thread->mutex);

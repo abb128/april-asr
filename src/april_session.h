@@ -40,6 +40,7 @@ struct AprilASRSession_i {
     bool was_flushed;
     uint64_t runs_since_emission;
 
+    bool sync;
     bool realtime; // TODO
     AudioProvider provider;
     ProcThread thread;
