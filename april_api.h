@@ -68,18 +68,27 @@ typedef struct AprilToken {
 // count may be 0, and if so then tokens may be NULL.
 typedef void(*AprilRecognitionResultHandler)(void*, AprilResultType, size_t, const AprilToken*);
 
+typedef struct AprilConfig {
+    // If all 0, will be ignored
+    AprilSpeakerID speaker;
+
+    // The handler that will be called as events occur.
+    // This may be called from a different thread.
+    AprilRecognitionResultHandler handler;
+    void *userdata;
+
+    // If set to true, will attempt to process audio in realtime and avoid
+    // lagging behind. This may result in reduced accuracy.
+    bool realtime; // TODO: stdbool.h requirement
+} AprilConfig;
+
 // Creates a session with a given model. A model may have many sessions
-// associated with it. The handler will be called with events as they occur,
-// but it may be called from a different thread. UUID may be NULL.
-AprilASRSession aas_create_session(
-    AprilASRModel model,
-    AprilRecognitionResultHandler handler,
-    void *userdata,
-    AprilSpeakerID *id
-);
+// associated with it.
+AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config);
 
 // Feed PCM16 audio data to the session, must be single-channel and sampled
-// to the sample rate given in `aam_get_sample_rate`
+// to the sample rate given in `aam_get_sample_rate`.
+// Note `short_count` is the number of shorts, not bytes!
 void aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count);
 
 // Processes any unprocessed samples and produces a final result.

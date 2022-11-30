@@ -38,7 +38,6 @@ TODO:
 * Could save hidden states
 * Could batch many inputs into one call
 * Figure out licensing
-* Language model
 * VAD
 * Tensors are calloc'ed when could be malloc'ed
 * could speed/slow audio for performance and accuracy

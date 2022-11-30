@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <assert.h>
+#include <time.h>
 #include "april_api.h"
 
 int ends_with(const char *str, const char *suffix) {
@@ -40,6 +41,8 @@ void handler(void *userdata, AprilResultType result, size_t count, const AprilTo
     printf("\n");
 }
 
+void dummy_handler(void *userdata, AprilResultType result, size_t count, const AprilToken *tokens){}
+
 int main(int argc, char *argv[]){
     if(argc != 3){
         printf("Usage: %s [file] [modelpath]\n", argv[0]);
@@ -48,7 +51,7 @@ int main(int argc, char *argv[]){
         return 1;
     }
 
-    const size_t BUFFER_SIZE = 521*2;
+    const size_t BUFFER_SIZE = 512*2;
 
     aam_api_init();
     AprilASRModel model = aam_create_model(argv[2]);
@@ -58,15 +61,21 @@ int main(int argc, char *argv[]){
     printf("Model lang: %s\n", aam_get_language(model));
     printf("Model samplerate: %d\n\n", aam_get_sample_rate(model));
 
-    AprilASRSession session = aas_create_session(model, handler, (void*)ExampleState, NULL);
+    AprilConfig config = {
+        .handler = handler,
+        .userdata = (void*)ExampleState,
+        .realtime = false
+    };
+
+    AprilASRSession session = aas_create_session(model, config);
     if(argv[1][0] == '-' && argv[1][1] == 0) {
         // read from stdin
         char data[BUFFER_SIZE];
         for(;;){
             size_t r = 0;
-            while(r < BUFFER_SIZE){
+            //while(r < BUFFER_SIZE){
                 r += read(STDIN_FILENO, &data[r], BUFFER_SIZE - r);
-            }
+            //}
 
             // avoid processing silence
             bool found_nonzero = false;
@@ -90,6 +99,47 @@ int main(int argc, char *argv[]){
         memset(data, 0, 6400);
         aas_feed_pcm16(session, (short *)data, 3200);
         aas_flush(session);
+    } else if (argv[1][0] == 'b' && argv[1][1] == 0) {
+        // benchmark
+        /*
+        short noise_1sec[48000];
+        for(int i=0; i<48000; i++){
+            noise_1sec[i] = rand();
+        }
+
+        size_t sr = aam_get_sample_rate(model);
+
+
+        feed_pcm_task tasks[64];
+        AprilASRSession sessions[64];
+        for(int i=0; i<64; i++){
+            sessions[i] = aas_create_session(model, dummy_handler, (void*)ExampleState, NULL);
+            tasks[i].noise_1sec = noise_1sec;
+            tasks[i].noise_1sec_size = 48000;
+            tasks[i].session_sample_rate = sr;
+            tasks[i].session = sessions[i];
+            tasks[i].num_seconds_to_feed = 10;
+        }
+
+        pthread_t threads[64];
+        for(int num_sessions=1; num_sessions<64; num_sessions++){
+            time_t begin = time(NULL);
+
+            for(int i=0; i<num_sessions; i++)
+                pthread_create(&threads[i], NULL, feed_pcm_task_runner, &tasks[i]);
+
+            for(int i=0; i<num_sessions; i++)
+                pthread_join(threads[i], NULL);
+
+            time_t end = time(NULL);
+            printf("%d sessions - %.2fx faster than realtime\n", num_sessions, 10.0 / difftime(end, begin));
+        }
+
+
+        for(int i=0; i<64; i++){
+            aas_free(sessions[i]);
+        }
+        */
     } else {
         FILE *fd = fopen(argv[1], "r");
         
@@ -122,9 +172,11 @@ int main(int argc, char *argv[]){
 
         printf("Read file, %llu bytes\n", sz1);
 
-        for(int j=0; j<100; j++) {
+        size_t samples_per_msec = aam_get_sample_rate(model) / 1000;
+        for(int j=0; j<1; j++) {
             for(int i=0; i<sz1/BUFFER_SIZE; i++){
                 aas_feed_pcm16(session, &((short *)file_data)[i*(BUFFER_SIZE/2)], BUFFER_SIZE/2);
+                usleep((BUFFER_SIZE / 2) * 1000 / samples_per_msec);
             }
         }
         //for(int i=0; i<1; i++)
@@ -132,7 +184,9 @@ int main(int argc, char *argv[]){
 
         aas_flush(session);
 
-        printf("\n");
+        sleep(15);
+
+        printf("\ndone\n");
 
         free(file_data);
     }

@@ -14,16 +14,36 @@ endif()
 
 include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src ${ORT_INCLUDE_DIR})
 
-add_library(aprilasr
+add_library(aprilasr_static
+  STATIC
   src/init.c
   src/april_model.c
   src/april_session.c
+  src/audio_provider.c
+  src/proc_thread.c
   src/params.c
   src/fbank.c
   src/ort_util.c
   src/file/model_file.c
   src/fft/pocketfft.c
 )
+
 add_executable(main example.cpp)
 
-target_link_libraries(main PRIVATE aprilasr onnxruntime::onnxruntime)
+target_link_libraries(main PRIVATE aprilasr_static onnxruntime::onnxruntime)
+
+add_library(aprilasr
+  SHARED
+  src/init.c
+  src/april_model.c
+  src/april_session.c
+  src/audio_provider.c
+  src/proc_thread.c
+  src/params.c
+  src/fbank.c
+  src/ort_util.c
+  src/file/model_file.c
+  src/fft/pocketfft.c
+)
+
+target_link_libraries(aprilasr_static PRIVATE onnxruntime::onnxruntime)

@@ -7,7 +7,10 @@
 #include "april_api.h"
 #include "fbank.h"
 
-#define MAX_ACTIVE_TOKENS 144
+#include "audio_provider.h"
+#include "proc_thread.h"
+
+#define MAX_ACTIVE_TOKENS 256
 
 struct AprilASRSession_i {
     AprilASRModel model;
@@ -36,6 +39,10 @@ struct AprilASRSession_i {
 
     bool was_flushed;
     uint64_t runs_since_emission;
+
+    bool realtime; // TODO
+    AudioProvider provider;
+    ProcThread thread;
 
     AprilRecognitionResultHandler handler;
     void *userdata;

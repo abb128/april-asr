@@ -2,12 +2,9 @@
 #include "params.h"
 #include "april_session.h"
 
-AprilASRSession aas_create_session(
-    AprilASRModel model,
-    AprilRecognitionResultHandler handler,
-    void *userdata,
-    AprilSpeakerID *id
-) {
+void run_aas_callback(void *userdata, int flags);
+
+AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config) {
     AprilASRSession aas = (AprilASRSession)calloc(1, sizeof(struct AprilASRSession_i));
 
     aas->model = model;
@@ -53,19 +50,26 @@ AprilASRSession aas_create_session(
     assert(aas->context.tensor != NULL);
     assert(aas->logits.tensor  != NULL);
 
-    aas->handler = handler;
-    aas->userdata = userdata;
-    if(handler == NULL) {
+    aas->handler = config.handler;
+    aas->userdata = config.userdata;
+    aas->realtime = config.realtime;
+    if(aas->handler == NULL) {
         LOG_ERROR("No handler provided! A handler is required, please provide a handler");
         aas_free(aas);
         return NULL;
     }
+
+    aas->provider = ap_create();
+    aas->thread = pt_create(run_aas_callback, aas);
 
     return aas;
 }
 
 void aas_free(AprilASRSession session) {
     if(session == NULL) return;
+
+    pt_free(session->thread);
+    ap_free(session->provider);
 
     free_tensorf(&session->logits);
     free_tensori(&session->context);
@@ -251,6 +255,7 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
         bool been_long_silence = aas->runs_since_emission >= 50;
 
         if(reasonably_confident) {
+            token.logprob -= 8.0;
             if(aas_emit_token(aas, &token, false)) {
                 assert(aas->active_token_head > 0);
                 aas->active_token_head--;
@@ -288,8 +293,17 @@ bool aas_infer(AprilASRSession aas){
     return any_inferred;
 }
 
-#define SEGSIZE 3200 //TODO
 void aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count) {
+    ap_push_audio(session->provider, pcm16, short_count);
+    pt_raise(session->thread, PT_FLAG_AUDIO);
+}
+
+
+FILE *fd = NULL;
+#define SEGSIZE 3200 //TODO
+void _aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count) {
+    if(fd == NULL) fd = fopen("/tmp/aas_debug.bin", "w");
+
     assert(session->fbank != NULL);
     assert(session != NULL);
     assert(pcm16 != NULL);
@@ -307,6 +321,8 @@ void aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count) {
         for(int i=0; i<remaining; i++){
             wave[i] = (float)pcm16[head + i] / 32768.0f;
         }
+
+        fwrite(wave, sizeof(float), remaining, fd);
         
         fbank_accept_waveform(session->fbank, wave, remaining);
 
@@ -314,10 +330,15 @@ void aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count) {
 
         head += remaining;
     }
+    fflush(fd);
+}
+
+void aas_flush(AprilASRSession session) {
+    pt_raise(session->thread, PT_FLAG_FLUSH);
 }
 
 const float ZEROS[SEGSIZE] = { 0 };
-void aas_flush(AprilASRSession session) {
+void _aas_flush(AprilASRSession session) {
     if(session->was_flushed) return;
 
     session->was_flushed = true;
@@ -332,4 +353,25 @@ void aas_flush(AprilASRSession session) {
         aas_infer(session);
     
     aas_finalize_tokens(session);
+}
+
+
+void run_aas_callback(void *userdata, int flags) {
+    AprilASRSession session = userdata;
+
+    if(flags & PT_FLAG_FLUSH) {
+        _aas_flush(session);
+    }
+
+    if(flags & PT_FLAG_AUDIO) {
+        for(;;){
+            size_t short_count = 3200;
+            short *shorts = ap_pull_audio(session->provider, &short_count);
+            if(short_count == 0) return;
+
+            _aas_feed_pcm16(session, shorts, short_count);
+
+            ap_pull_audio_finish(session->provider, short_count);
+        }
+    }
 }
