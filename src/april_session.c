@@ -25,7 +25,7 @@ AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config) {
     aas->context = alloc_tensor2i(mi, model->context_dim);
 
     if(model->context_dim[0] != 1) {
-        LOG_ERROR("Currently, only batch size 1 is supported. Got batch size %d", model->context_dim[0]);
+        LOG_ERROR("Currently, only batch size 1 is supported. Got batch size %ld", model->context_dim[0]);
         aas_free(aas);
         return NULL;
     }
@@ -210,7 +210,7 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
 
     int max_idx = -1;
     float max_val = -9999999999.0;
-    for(int i=0; i<params->token_count; i++){
+    for(size_t i=0; i<params->token_count; i++){
         if(i == blank) continue;
 
         if(logits[i] > max_val){
@@ -272,8 +272,9 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
 
 bool aas_infer(AprilASRSession aas){
     if(!aas->dout_init) {
-        for(int i=0; i<aas->context_size; i++)
+        for(size_t i=0; i<aas->context_size; i++) {
             aas_update_context(aas, aas->model->params.blank_id);
+        }
         
         aas->dout_init = true;
     }
@@ -323,7 +324,7 @@ void _aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count) 
         if(remaining < 1) break;
         if(remaining > SEGSIZE) remaining = SEGSIZE;
 
-        for(int i=0; i<remaining; i++){
+        for(size_t i=0; i<remaining; i++){
             wave[i] = (float)pcm16[head + i] / 32768.0f;
         }
 

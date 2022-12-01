@@ -96,11 +96,11 @@ bool read_header(ModelFile model) {
 
     model->num_networks = mfu_read_u64(fd);
     if(model->num_networks > MAX_NETWORKS) {
-        LOG_WARNING("Too many networks %llu", model->num_networks);
+        LOG_WARNING("Too many networks %lu", model->num_networks);
         return false;
     }
 
-    for(int i=0; i<model->num_networks; i++){
+    for(size_t i=0; i<model->num_networks; i++){
         model->networks[i].offset = mfu_read_u64(fd);
         model->networks[i].size = mfu_read_u64(fd);
         if((model->networks[i].offset + model->networks[i].size) > model->file_size) {

@@ -27,15 +27,15 @@ AudioProvider ap_create() {
 
 void ap_push_audio(AudioProvider ap, const short *audio, size_t short_count) {
     if(short_count > (MAX_AUDIO / 2)) {
-        LOG_WARNING("AudioProvider is being given a lot of audio (%u samples), please reduce", short_count);
+        LOG_WARNING("AudioProvider is being given a lot of audio (%lu samples), please reduce", short_count);
     }
 
     size_t audio_head = 0;
     while(short_count > 0){
-        bool will_overflow = (ap->tail < ap->head) && ((ap->tail + short_count) > ap->head)
-                          || (ap->tail > ap->head) && ((ap->tail + short_count) > (MAX_AUDIO + ap->head));
+        bool will_overflow = ((ap->tail < ap->head) && ((ap->tail + short_count) > ap->head))
+                          || ((ap->tail > ap->head) && ((ap->tail + short_count) > (MAX_AUDIO + ap->head)));
         if(will_overflow){
-            LOG_WARNING("Can't keep up! Attempted to write %u samples", short_count);
+            LOG_WARNING("Can't keep up! Attempted to write %lu samples", short_count);
             return;
         }
 
