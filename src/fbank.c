@@ -57,7 +57,7 @@ void generate_banks(float *bins_mat, int num_bins, int num_fft_bins, int padded_
         for(int j=0; j<num_fft_bins; j++){
             float freq = fft_bin_width * (float)j;
             float mel = (float)mel_scale((double)freq);
-            
+
             float weight = 0.0f;
             if((mel > left_mel) && (mel < right_mel)) {
                 if(mel <= center_mel){
@@ -117,7 +117,7 @@ OnlineFBank make_fbank(FBankOptions opts) {
     fbank->mel_bins = (float*)calloc(fbank->num_fft_bins * opts.num_bins, sizeof(float));
     generate_banks(fbank->mel_bins, opts.num_bins, fbank->num_fft_bins,
         fbank->padded_window_size, opts.sample_freq, opts.mel_low, opts.mel_high);
-    
+
     fbank->temp_segments_y = opts.pull_segment_count * 32;
     fbank->temp_segments_count = fbank->temp_segments_y * fbank->num_fft_bins;
     fbank->temp_segments = (float*)calloc(fbank->temp_segments_count, sizeof(float));
@@ -154,7 +154,7 @@ void fbank_accept_waveform(OnlineFBank fbank, const float *wave, size_t wave_cou
                 // This branch may be hit when wave_count < fbank->padded_window_size
                 // We need to copy to prev_leftover not only data in wave, but also from
                 // prev_leftover itself.
-                
+
                 size_t num_to_move_from_prev = -start_idx;
 
                 assert((wave_count + num_to_move_from_prev) <= (fbank->padded_window_size * 2));
@@ -165,7 +165,7 @@ void fbank_accept_waveform(OnlineFBank fbank, const float *wave, size_t wave_cou
                     &fbank->prev_leftover[fbank->prev_leftover_count + start_idx],
                     num_to_move_from_prev * sizeof(float)
                 );
-                
+
                 memcpy(
                     &fbank->prev_leftover[num_to_move_from_prev],
                     wave,
@@ -185,7 +185,7 @@ void fbank_accept_waveform(OnlineFBank fbank, const float *wave, size_t wave_cou
                 fbank->data[j] = wave[start_idx + j] * fbank->window[j];
             }
         }
-        
+
         double *dptr = fbank->data;
         double *rptr = fbank->ret;
         memcpy((char *)(rptr+1), dptr, fbank->padded_window_size * sizeof(double));
@@ -224,7 +224,7 @@ void fbank_accept_waveform(OnlineFBank fbank, const float *wave, size_t wave_cou
         for(int mel=0; mel<fbank->opts.num_bins; mel++){
             out[mel] = (float)log((double)MAX(kEps, out[mel]));
         }
-        
+
         fbank->temp_segment_head++;
         fbank->temp_segment_avail++;
         fbank->temp_segment_avail_f = fbank->temp_segment_avail;

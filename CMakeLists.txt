@@ -5,7 +5,12 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 project(aprilasr)
 
 cmake_policy(SET CMP0074 NEW)
-set(onnxruntime_ROOT ${PROJECT_SOURCE_DIR}/lib)
+if (DEFINED ENV{FLATPAK_DEST})
+  set(onnxruntime_ROOT $ENV{FLATPAK_DEST}/onnxruntime_ROOT)
+else()
+  set(onnxruntime_ROOT ${PROJECT_SOURCE_DIR}/lib)
+endif()
+
 find_package(onnxruntime REQUIRED)
 if(NOT onnxruntime_FOUND)
   message(FATAL_ERROR "Could not find onnxruntime")
@@ -46,4 +51,5 @@ add_library(aprilasr
   src/fft/pocketfft.c
 )
 
-target_link_libraries(aprilasr_static PRIVATE onnxruntime::onnxruntime)
+target_link_libraries(aprilasr_static m dl onnxruntime::onnxruntime)
+target_link_libraries(aprilasr m dl onnxruntime::onnxruntime)
