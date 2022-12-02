@@ -139,7 +139,7 @@ void aas_run_joiner(AprilASRSession aas){
         aas->eout.tensor,
         aas->dout.tensor
     };
-    
+
     OrtValue *outputs[] = {
         aas->logits.tensor
     };
@@ -162,7 +162,7 @@ void aas_update_context(AprilASRSession aas, int64_t new_token){
 
         aas->context.data[last_idx] = new_token;
     }
-    
+
     aas_run_decoder(aas);
 }
 
@@ -275,7 +275,7 @@ bool aas_infer(AprilASRSession aas){
         for(size_t i=0; i<aas->context_size; i++) {
             aas_update_context(aas, aas->model->params.blank_id);
         }
-        
+
         aas->dout_init = true;
     }
 
@@ -289,7 +289,7 @@ bool aas_infer(AprilASRSession aas){
             aas_run_joiner(aas);
             if(aas_process_logits(aas, early_emit > 0.0f ? early_emit : 0.0f)) break;
         }
-        
+
         any_inferred = true;
     }
 
@@ -305,10 +305,15 @@ void aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count) {
 }
 
 
+#ifdef APRIL_DEBUG_SAVE_AUDIO
 FILE *fd = NULL;
+#endif
+
 #define SEGSIZE 3200 //TODO
 void _aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count) {
+#ifdef APRIL_DEBUG_SAVE_AUDIO
     if(fd == NULL) fd = fopen("/tmp/aas_debug.bin", "w");
+#endif
 
     assert(session->fbank != NULL);
     assert(session != NULL);
@@ -328,21 +333,26 @@ void _aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count) 
             wave[i] = (float)pcm16[head + i] / 32768.0f;
         }
 
+#ifdef APRIL_DEBUG_SAVE_AUDIO
         fwrite(wave, sizeof(float), remaining, fd);
-        
+#endif
+
         fbank_accept_waveform(session->fbank, wave, remaining);
 
         aas_infer(session);
 
         head += remaining;
     }
+
+#ifdef APRIL_DEBUG_SAVE_AUDIO
     fflush(fd);
+#endif
 }
 
 void _aas_flush(AprilASRSession session);
 void aas_flush(AprilASRSession session) {
     if(session->sync) return _aas_flush(session);
-    
+
     pt_raise(session->thread, PT_FLAG_FLUSH);
 }
 
@@ -360,7 +370,7 @@ void _aas_flush(AprilASRSession session) {
 
     while(fbank_flush(session->fbank))
         aas_infer(session);
-    
+
     aas_finalize_tokens(session);
 }
 
