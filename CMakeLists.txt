@@ -11,6 +11,10 @@ else()
   set(onnxruntime_ROOT ${PROJECT_SOURCE_DIR}/lib)
 endif()
 
+if (DEFINED ENV{ONNX_ROOT})
+  set(onnxruntime_ROOT $ENV{ONNX_ROOT})
+endif()
+
 find_package(onnxruntime REQUIRED)
 if(NOT onnxruntime_FOUND)
   message(FATAL_ERROR "Could not find onnxruntime")
