@@ -4,25 +4,51 @@
 #include <cstring>
 #include <assert.h>
 #include <time.h>
+#include <sys/mman.h>
+#include <errno.h>
 #include "april_api.h"
 
-int ends_with(const char *str, const char *suffix) {
-    if (!str || !suffix)
-        return 0;
-    size_t lenstr = strlen(str);
-    size_t lensuffix = strlen(suffix);
-    if (lensuffix >  lenstr)
-        return 0;
-    return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
-}
+#define BUFFER_SIZE 1024
+int ends_with(const char *str, const char *suffix);
 
-const char *ExampleState = "This is a test to ensure userdata is passed correctly";
-
-int backspace_needed = 0;
-int line_length = 0;
-void handler(void *userdata, AprilResultType result, size_t count, const AprilToken *tokens) {
-    assert(userdata == ExampleState);
+struct wav_header {
+    // RIFF Header
+    char riff_header[4]; // Contains "RIFF"
+    uint32_t wav_size; // Size of the wav portion of the file, which follows the first 8 bytes. File size - 8
+    char wave_header[4]; // Contains "WAVE"
     
+    // Format Header
+    char fmt_header[4]; // Contains "fmt " (includes trailing space)
+    int32_t fmt_chunk_size; // Should be 16 for PCM
+    int16_t audio_format; // Should be 1 for PCM. 3 for IEEE Float
+    int16_t num_channels;
+    int32_t sample_rate;
+    int32_t byte_rate; // Number of bytes per second. sample_rate * num_channels * Bytes Per Sample
+    int16_t sample_alignment; // num_channels * Bytes Per Sample
+    int16_t bit_depth; // Number of bits per sample
+    
+    // Data
+    char data_header[4]; // Contains "data"
+    uint32_t data_bytes; // Number of bytes in data. Number of samples * num_channels * sample byte size
+};
+
+static_assert(sizeof(wav_header) == 44L);
+
+// In this example, the internal state is just a global struct just for testing
+// In your program you can pass any pointer into userdata to access it in the
+// handler
+struct {
+    int xyz;
+} some_internal_state;
+
+// This callback function will get called every time a new result is decoded.
+// It's passed into the AprilConfig along with the userdata pointer.
+// Note that this function may be called from a different thread, unless
+// ARPIL_CONFIG_FLAG_SYNCHRONOUS is passed in the config, in which case calls
+// to aas_feed_pcm16 will block. In this example we want it to block.
+void handler(void *userdata, AprilResultType result, size_t count, const AprilToken *tokens) {
+    assert(userdata == &some_internal_state);
+
     switch(result){
         case APRIL_RESULT_RECOGNITION_FINAL: 
             printf("@ ");
@@ -41,107 +67,78 @@ void handler(void *userdata, AprilResultType result, size_t count, const AprilTo
     printf("\n");
 }
 
-void dummy_handler(void *userdata, AprilResultType result, size_t count, const AprilToken *tokens){}
-
 int main(int argc, char *argv[]){
     if(argc != 3){
         printf("Usage: %s [file] [modelpath]\n", argv[0]);
-        printf(" - [file] must be a 16000Hz raw PCM16 file\n");
+        printf(" - [file] must be a 16000Hz raw PCM16 file, or may be - for stdin\n");
         printf(" - [modelpath] must be a path to the models\n");
         return 1;
     }
 
-    const size_t BUFFER_SIZE = 512*2;
-
+    const char *input_file = argv[1];
+    const char *input_model = argv[2];
+    
+    // In the start of our program we should call aam_api_init.
+    // This should only be called once.
     aam_api_init();
-    AprilASRModel model = aam_create_model(argv[2]);
-    assert(model != NULL);
+
+    // Next we should load the model. The model by itself doesn't allow us
+    // to do much except for get the metadata. If loading the model
+    // fails, NULL is returned.
+    AprilASRModel model = aam_create_model(input_model);
+    if(model == NULL){
+        printf("Loading model %s failed!\n", input_model);
+        return 1;
+    }
+    
+    size_t model_sample_rate = aam_get_sample_rate(model);
     printf("Model name: %s\n", aam_get_name(model));
     printf("Model desc: %s\n", aam_get_description(model));
     printf("Model lang: %s\n", aam_get_language(model));
-    printf("Model samplerate: %d\n\n", aam_get_sample_rate(model));
+    printf("Model samplerate: %ld\n\n", model_sample_rate);
 
+
+    // To do actual speech recognition, it's necessary to create a session.
+    // Models and sessions are separate to allow for more efficient handling
+    // of multiple sessions. For example, an application may be performing
+    // recognition on 20 different audio streams by using 20 different sessions
+    // and by re-using the same AprilASRModel the relative memory use is low.
+    // However, it's important that the AprilASRModel does not get freed
+    // before all of its sessions.
     AprilConfig config = {
         .handler = handler,
-        .userdata = (void*)ExampleState,
+        .userdata = (void*)&some_internal_state,
+
+        // In this example we just want to perform recognition on an audio
+        // file synchronously and exit once complete. In a real application
+        // you may want to use asynchronous recognition instead
         .flags = ARPIL_CONFIG_FLAG_SYNCHRONOUS
     };
 
     AprilASRSession session = aas_create_session(model, config);
+
+
     if(argv[1][0] == '-' && argv[1][1] == 0) {
-        // read from stdin
+        // Reading stdin mode. It's assumed that the input data is pcm16 audio,
+        // sampled in the model's sample rate.
+        // You can achieve this on Linux like this:
+        // $ parec --format=s16 --rate=16000 --channels=1 --latency-ms=100 | ./main - /path/to/model.april
+
         char data[BUFFER_SIZE];
         for(;;){
-            size_t r = 0;
-            //while(r < BUFFER_SIZE){
-                r += read(STDIN_FILENO, &data[r], BUFFER_SIZE - r);
-            //}
-
-            // avoid processing silence
-            bool found_nonzero = false;
-            for(int i=0; i<r; i++){
-                if(data[i] != 0){
-                    found_nonzero = true;
-                    break;
-                }
-            }
-            if(!found_nonzero) {
-                aas_flush(session);
-                continue;
-            }
-            
-
+            size_t r = read(STDIN_FILENO, &data[r], BUFFER_SIZE - r);
             aas_feed_pcm16(session, (short *)data, r/2);
         }
     } else if (argv[1][0] == '?' && argv[1][1] == 0) {
-        // memory leak check, just send some blank 
+        // Run some blank data, mainly for memory leak testing
         char data[6400];
         memset(data, 0, 6400);
         aas_feed_pcm16(session, (short *)data, 3200);
         aas_flush(session);
-    } else if (argv[1][0] == 'b' && argv[1][1] == 0) {
-        // benchmark
-        /*
-        short noise_1sec[48000];
-        for(int i=0; i<48000; i++){
-            noise_1sec[i] = rand();
-        }
-
-        size_t sr = aam_get_sample_rate(model);
-
-
-        feed_pcm_task tasks[64];
-        AprilASRSession sessions[64];
-        for(int i=0; i<64; i++){
-            sessions[i] = aas_create_session(model, dummy_handler, (void*)ExampleState, NULL);
-            tasks[i].noise_1sec = noise_1sec;
-            tasks[i].noise_1sec_size = 48000;
-            tasks[i].session_sample_rate = sr;
-            tasks[i].session = sessions[i];
-            tasks[i].num_seconds_to_feed = 10;
-        }
-
-        pthread_t threads[64];
-        for(int num_sessions=1; num_sessions<64; num_sessions++){
-            time_t begin = time(NULL);
-
-            for(int i=0; i<num_sessions; i++)
-                pthread_create(&threads[i], NULL, feed_pcm_task_runner, &tasks[i]);
-
-            for(int i=0; i<num_sessions; i++)
-                pthread_join(threads[i], NULL);
-
-            time_t end = time(NULL);
-            printf("%d sessions - %.2fx faster than realtime\n", num_sessions, 10.0 / difftime(end, begin));
-        }
-
-
-        for(int i=0; i<64; i++){
-            aas_free(sessions[i]);
-        }
-        */
     } else {
-        FILE *fd = fopen(argv[1], "r");
+        // wave file mode, the file must be in PCM16 format sampled in the
+        // model's sample rate.
+        FILE *fd = fopen(argv[1], "rb");
         
         if(fd == 0){
             printf("Failed to open file %s\n", argv[1]);
@@ -150,46 +147,66 @@ int main(int argc, char *argv[]){
 
         fseek(fd, 0L, SEEK_END);
         size_t sz = ftell(fd);
-        
+        size_t offset = 0L;
 
+        fseek(fd, 0L, SEEK_SET);
+
+        // Verify the RIFF header if supplied
         if(ends_with(argv[1], ".wav")) {
-            fseek(fd, 44L, SEEK_SET);
-        } else {
-            fseek(fd, 0L, SEEK_SET);
-        }
+            wav_header header;
+            fread(&header, 1L, 44L, fd);
 
-
-        void *file_data = malloc(sz);
-        size_t sz1 = fread(file_data, 1, sz, fd);
-
-        fclose(fd);
-        
-
-        if(sz1 % 2 != 0){
-            printf("File size not divisible by two, is the file raw pcm16?\nSize: %llu\n", sz1);
-            return 4;
-        }
-
-        printf("Read file, %llu bytes\n", sz1);
-
-        size_t samples_per_msec = aam_get_sample_rate(model) / 1000;
-        for(int j=0; j<1; j++) {
-            for(int i=0; i<sz1/BUFFER_SIZE; i++){
-                aas_feed_pcm16(session, &((short *)file_data)[i*(BUFFER_SIZE/2)], BUFFER_SIZE/2);
+            bool is_valid_wav = (header.fmt_chunk_size == 16)
+                             && (header.audio_format == 1)
+                             && (header.sample_rate == model_sample_rate)
+                             && (header.num_channels == 1);
+            
+            if(!is_valid_wav){
+                printf("Wave file must be single-channel 16-bit PCM sampled in %llu Hz!\n", model_sample_rate);
+                return 2;
             }
-        }
-        //for(int i=0; i<1; i++)
-        //    aas_feed_pcm16(session, (short *)file_data, sz1/2);
 
+            offset = 44L;
+        }
+
+        // map the file to memory
+        void *file_map = mmap(NULL, sz, PROT_READ, MAP_PRIVATE, fileno(fd), 0);
+        if(file_map == MAP_FAILED) {
+            printf("mmap failure %d\n", errno);
+            return 3;
+        }
+
+        int16_t *file_data = (int16_t *)(file_map + offset);
+        size_t num_shorts = (sz - offset) / 2;
+
+        // For synchronous mode, it's possible to feed the entire thing at once
+        // For asynchronous, you may want to break it up into smaller chunks
+        // over time because the size of the internal buffer is limited
+        aas_feed_pcm16(session, file_data, num_shorts);
+
+        // Flushing makes sure any remaining frames get processed and a final
+        // result is given
         aas_flush(session);
 
         printf("\ndone\n");
 
-        free(file_data);
+        munmap(file_map, sz);
+        fclose(fd);
     }
 
     aas_free(session);
     aam_free(model);
 
     return 0;
+}
+
+
+int ends_with(const char *str, const char *suffix) {
+    if (!str || !suffix)
+        return 0;
+    size_t lenstr = strlen(str);
+    size_t lensuffix = strlen(suffix);
+    if (lensuffix >  lenstr)
+        return 0;
+    return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
 }

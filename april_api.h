@@ -1,6 +1,7 @@
 #ifndef _APRIL_API
 #define _APRIL_API
 
+#include <stddef.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -16,7 +17,7 @@ typedef struct AprilASRSession_i * AprilASRSession;
 // Must be called once before calling any other functions
 void aam_api_init(void);
 
-// Creates a model given a path. May return NULL if loading failed.
+// Creates a model given a path. Returns NULL if loading failed.
 AprilASRModel aam_create_model(const char *model_path);
 
 // Get the name/desc/lang of the model. The pointers are valid for the
@@ -36,7 +37,8 @@ void aam_free(AprilASRModel model);
 
 // Unique identifier for a speaker. For example, it may be a hash of the
 // speaker's name. This may be provided to `aas_create_session` for saving
-// and restoring state.
+// and restoring state. If set to all zeros, will be ignored.
+// Currently not implemented, has no effect.
 typedef struct AprilSpeakerID {
     uint8_t data[16];
 } AprilSpeakerID;
@@ -57,14 +59,15 @@ typedef struct AprilToken {
     // Null-terminated string. The string contains its own formatting,
     // for example it may start with a space to denote a new word, or
     // not start with a space to denote the next part of a word.
+    // The pointer will remain valid for the lifetime of the model.
     const char *token;
 
     // Log probability of this being the correct token
     float logprob;
 } AprilToken;
 
-// Pointers are guaranteed to be valid only for the duration of the call.
 // (void* userdata, AprilResultType result, size_t count, const AprilToken *tokens);
+// The tokens pointer is only valid for the duration of the call. It may be
 // count may be 0, and if so then tokens may be NULL.
 typedef void(*AprilRecognitionResultHandler)(void*, AprilResultType, size_t, const AprilToken*);
 
@@ -75,7 +78,6 @@ typedef void(*AprilRecognitionResultHandler)(void*, AprilResultType, size_t, con
 #define ARPIL_CONFIG_FLAG_SYNCHRONOUS 1
 
 typedef struct AprilConfig {
-    // If all 0, will be ignored
     AprilSpeakerID speaker;
 
     // The handler that will be called as events occur.

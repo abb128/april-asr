@@ -254,7 +254,7 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
 
         // If current token is blank, but it's reasonably confident, emit
         bool reasonably_confident = (!is_equal_to_previous) && (max_val > (blank_val - 4.0f));
-        bool been_long_silence = aas->runs_since_emission >= 50;
+        bool been_long_silence = aas->runs_since_emission >= 50; // TODO: Use a precise number like 2.2 seconds
 
         if(reasonably_confident) {
             token.logprob -= 8.0;

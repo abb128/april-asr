@@ -15,4 +15,4 @@ $ lstm_transducer_stateless2/export-april.py \
     --language "en-us"
 ```
 
-This will produce a .april file in the exp-dir. This can be loaded by libapril.
+This will produce a .april file in the exp-dir. This can be loaded by libaprilasr.

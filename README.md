@@ -1,48 +1,68 @@
 # april-asr
 
+aprilasr is a minimal library that provides an API for offline streaming speech-to-text applications
 
+## Language support
+Currently only a C API is available.
 
-Requires ONNXRuntime v1.13.1
+## Example
+An example use of this library is provided in `example.cpp`. It can perform speech recognition on a wave file, or do streaming recognition by reading stdin.
 
-put onnx v1.13.1 in lib
+It's built as the target `main`. After building aprilasr, you can run it like so:
+```
+$ ./main /path/to/file.wav /path/to/model.april
+```
 
+For streaming recognition, you can pipe parec into it:
+```
+$ parec --format=s16 --rate=16000 --channels=1 --latency-ms=100 | ./main - /path/to/model.april
+```
 
-To compile:
+## Models
+Currently only one model is available:
+* [English model](https://april.sapples.net/aprilv0_en-us.april), based on [csukuangfj's trained icefall model](https://huggingface.co/csukuangfj/icefall-asr-librispeech-lstm-transducer-stateless2-2022-09-03/tree/main/exp) and trained with some extra data.
+
+To make your own models, check out `extra/exporting-howto.md`
+
+## Building
+Building requires ONNXRuntime v1.13.1. You can either try to build it from source or just download the release binaries.
+
+### Downloading ONNXRuntime
+Run `./download_onnx_linux_x64.sh` for linux-x64.
+
+For other platforms the script should be very similar, or visit https://github.com/microsoft/onnxruntime/releases/tag/v1.13.1 and download the right zip/tgz file for your platform and extract the contents to a directory named `lib`.
+
+You may also define the env variable `ONNX_ROOT` containing a path to where you extracted the archive, if placing it in `lib` isn't a choice.
+
+### Building ONNXRuntime from source (untested)
+You don't need to do this if you've downloaded ONNXRuntime.
+
+Follow the instructions here: https://onnxruntime.ai/docs/how-to/build/inferencing.html#linux
+
+then run
+```
+cd build/Linux/RelWithDebInfo/
+sudo make install
+```
+
+### Building aprilasr
+Run:
 ```
 $ mkdir build
 $ cd build
 $ cmake -DCMAKE_BUILD_TYPE=Release ..
-$ make
+$ make -j4
 ```
 
-To run example test:
+You should now have `main`, `libaprilasr.so` and `libaprilasr_static.so`.
+
+If running `main` fails because it can't find `libonnxruntime.so.1.13.1`, you may need to make `libonnxruntime.so.1.13.1` accessible like so:
 ```
-$ export LD_LIBRARY_PATH=`pwd`/../lib
-$ ./main ../example.wav
+$ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/../lib/lib/
 ```
 
+## Applications
+Currently I'm developing [Live Captions](https://github.com/abb128/LiveCaptions), a Linux desktop app that provides live captioning.
 
-If you get this error:
-```
-error: expected ‘)’ before ‘__FILE_NAME__’
-   33 | #define LOCATION __FILE_NAME__ ":" S2(__LINE__)
-      |                  ^~~~~~~~~~~~~
-```
-you are running an old version of gcc. Please install gcc 12+ or clang 13+
-
-
-
-TODO:
-* Better error handling
-* fbank snip_edges and kaldifeat difference :(
-* Could save hidden states
-* Could batch many inputs into one call
-* Figure out licensing
-* VAD
-* Tensors are calloc'ed when could be malloc'ed
-* could speed/slow audio for performance and accuracy
-* raspberry pi support, NCNN?
-* __FILE_NAME__ alternative
-* findonnxruntime only does linux-x64, need arm64 as well
-* IOBinding instead of OrtValue*
-* LM, Beam search
+## Acknowledgements
+Thanks to the [k2-fsa/icefall](https://github.com/k2-fsa/icefall) contributors for creating the speech recognition recipes and models.
