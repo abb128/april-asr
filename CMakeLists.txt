@@ -4,8 +4,6 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(aprilasr)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'")
-
 cmake_policy(SET CMP0074 NEW)
 if (DEFINED ENV{ONNX_ROOT})
   set(ONNXRuntime_ROOT_DIR $ENV{ONNX_ROOT})

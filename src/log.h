@@ -30,7 +30,7 @@ extern LogLevel g_loglevel;
 
 #define S1(x) #x
 #define S2(x) S1(x)
-#define LOCATION __FILENAME__ ":" S2(__LINE__)
+#define LOCATION __FILE__ ":" S2(__LINE__)
 #define LOG_WITH_LEVEL(level, fmt, ...) if(level >= g_loglevel) fprintf(stderr, "libapril: " "(" LOCATION ")" " %s[%s]\033[0m " fmt "\n", LogLevelColors[level], LogLevelStrings[level], ##__VA_ARGS__)
 
 #define LOG_DEBUG(fmt, ...)    LOG_WITH_LEVEL(LEVEL_DEBUG,    fmt, ##__VA_ARGS__)
