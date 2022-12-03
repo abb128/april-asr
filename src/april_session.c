@@ -210,7 +210,7 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
 
     int max_idx = -1;
     float max_val = -9999999999.0;
-    for(size_t i=0; i<params->token_count; i++){
+    for(size_t i=0; i<(size_t)params->token_count; i++){
         if(i == blank) continue;
 
         if(logits[i] > max_val){

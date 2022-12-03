@@ -19,8 +19,7 @@ $ parec --format=s16 --rate=16000 --channels=1 --latency-ms=100 | ./main - /path
 ```
 
 ## Models
-Currently only one model is available:
-* [English model](https://april.sapples.net/aprilv0_en-us.april), based on [csukuangfj's trained icefall model](https://huggingface.co/csukuangfj/icefall-asr-librispeech-lstm-transducer-stateless2-2022-09-03/tree/main/exp) and trained with some extra data.
+Currently only one model is available, the [English model](https://april.sapples.net/aprilv0_en-us.april), based on [csukuangfj's trained icefall model](https://huggingface.co/csukuangfj/icefall-asr-librispeech-lstm-transducer-stateless2-2022-09-03/tree/main/exp) as the base, and trained with some extra data.
 
 To make your own models, check out `extra/exporting-howto.md`
 

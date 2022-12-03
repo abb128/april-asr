@@ -1,6 +1,6 @@
 # Exporting April model
 
-Currently only `lstm_transducer_stateless2` model is tested and supported.
+Currently only [lstm_transducer_stateless2](https://github.com/k2-fsa/icefall/tree/master/egs/librispeech/ASR/lstm_transducer_stateless2) model is tested and supported.
 
 To export, copy export-april.py to the `lstm_transducer_stateless2` directory and call it as instructed.
 

@@ -71,7 +71,7 @@ bool read_params_from_fd(ModelParameters *params, FILE *fd) {
     params->token_length = 0;
     for(int i=0; i<params->token_count; i++){
         int32_t token_len = mfu_read_i32(fd);
-        if(token_len > params->token_length)
+        if(token_len > (int32_t)params->token_length)
             params->token_length = token_len;
         
         fseek(fd, token_len, SEEK_CUR);
@@ -86,7 +86,7 @@ bool read_params_from_fd(ModelParameters *params, FILE *fd) {
     for(int i=0; i<params->token_count; i++){
         int32_t token_len = mfu_read_i32(fd);
         
-        ASSERT_OR_RETURN_FALSE(token_len < params->token_length);
+        ASSERT_OR_RETURN_FALSE(token_len < (int32_t)params->token_length);
 
         fread(get_token(params, i), 1, token_len, fd);
     }

@@ -96,7 +96,7 @@ bool read_header(ModelFile model) {
 
     model->num_networks = mfu_read_u64(fd);
     if(model->num_networks > MAX_NETWORKS) {
-        LOG_WARNING("Too many networks %lu", model->num_networks);
+        LOG_WARNING("Too many networks %zu", model->num_networks);
         return false;
     }
 
@@ -104,7 +104,7 @@ bool read_header(ModelFile model) {
         model->networks[i].offset = mfu_read_u64(fd);
         model->networks[i].size = mfu_read_u64(fd);
         if((model->networks[i].offset + model->networks[i].size) > model->file_size) {
-            LOG_WARNING("Network %d out of bounds of file", i);
+            LOG_WARNING("Network %zu out of bounds of file", i);
             return false;
         }
     }
@@ -158,6 +158,7 @@ size_t model_network_size(ModelFile model, size_t index) {
 }
 
 size_t model_network_read(ModelFile model, size_t index, void *data, size_t data_len) {
+    // TODO: Should mmap instead!!!
     if(data_len > model_network_size(model, index))
         data_len = model_network_size(model, index);
     
