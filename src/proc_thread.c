@@ -1,8 +1,13 @@
-#include <threads.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include "log.h"
 #include "proc_thread.h"
+
+#ifndef USE_TINYCTHREAD
+#include <threads.h>
+#else
+#include "tinycthread/tinycthread.h"
+#endif
 
 int run_pt(void *userdata);
 

@@ -23,7 +23,7 @@ Currently only one model is available, the [English model](https://april.sapples
 
 To make your own models, check out `extra/exporting-howto.md`
 
-## Building
+## Building on Linux
 Building requires ONNXRuntime v1.13.1. You can either try to build it from source or just download the release binaries.
 
 ### Downloading ONNXRuntime
@@ -59,6 +59,20 @@ If running `main` fails because it can't find `libonnxruntime.so.1.13.1`, you ma
 ```
 $ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/../lib/lib/
 ```
+
+## Building on Windows (msvc)
+Create a folder called `lib` in the april-asr folder.
+
+Download [onnxruntime-win-x64-1.13.1.zip](https://github.com/microsoft/onnxruntime/releases/download/v1.13.1/onnxruntime-win-x64-1.13.1.zip) and extract the insides of the onnxruntime-win-x64-1.13.1 folder to the `lib` folder
+
+Run cmake to configure and generate Visual Studio project files. Make sure you select x64 as the target if you have downloaded the x64 version of ONNXRuntime.
+
+Open the `ALL_BUILD.vcxproj` and everything should build. The output will be in the Release or Debug folders.
+
+When running main.exe you may receive an error message like this:
+> The application was unable to start correctly (0xc000007b)
+
+To fix this, you need to make onnxruntime.dll available. One way to do this is to copy onnxruntime.dll from lib/lib/onnxruntime.dll to build/Debug and build/Release. You may need to distribute the dll together with your application.
 
 ## Applications
 Currently I'm developing [Live Captions](https://github.com/abb128/LiveCaptions), a Linux desktop app that provides live captioning.

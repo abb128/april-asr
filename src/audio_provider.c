@@ -5,6 +5,10 @@
 #include "log.h"
 #include "audio_provider.h"
 
+#ifdef _MSC_VER
+#define _Atomic volatile
+#endif
+
 #define MIN(A, B) ((A) < (B)) ? (A) : (B)
 
 #define MAX_AUDIO 48000

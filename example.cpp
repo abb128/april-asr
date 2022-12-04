@@ -1,12 +1,17 @@
 #include <stdio.h>
-#include <unistd.h>
 #include <cstdlib>
 #include <cstring>
 #include <assert.h>
 #include <time.h>
-#include <sys/mman.h>
 #include <errno.h>
 #include "april_api.h"
+
+#ifndef _MSC_VER
+#include <unistd.h>
+#else
+#include <io.h>
+#define STDIN_FILENO 0
+#endif
 
 #define BUFFER_SIZE 1024
 int ends_with(const char *str, const char *suffix);
@@ -32,7 +37,7 @@ struct wav_header {
     uint32_t data_bytes; // Number of bytes in data. Number of samples * num_channels * sample byte size
 };
 
-static_assert(sizeof(wav_header) == 44L);
+static_assert(sizeof(wav_header) == 44L, "wav header must be 44 bytes");
 
 // In this example, the internal state is just a global struct just for testing
 // In your program you can pass any pointer into userdata to access it in the
@@ -105,15 +110,14 @@ int main(int argc, char *argv[]){
     // and by re-using the same AprilASRModel the relative memory use is low.
     // However, it's important that the AprilASRModel does not get freed
     // before all of its sessions.
-    AprilConfig config = {
-        .handler = handler,
-        .userdata = (void*)&some_internal_state,
+	AprilConfig config = { 0 };
+	config.handler = handler;
+	config.userdata = (void*)&some_internal_state;
 
-        // In this example we just want to perform recognition on an audio
-        // file synchronously and exit once complete. In a real application
-        // you may want to use asynchronous recognition instead
-        .flags = ARPIL_CONFIG_FLAG_SYNCHRONOUS
-    };
+	// In this example we just want to perform recognition on an audio
+	// file synchronously and exit once complete. In a real application
+	// you may want to use asynchronous recognition instead
+	config.flags = ARPIL_CONFIG_FLAG_SYNCHRONOUS;
 
     AprilASRSession session = aas_create_session(model, config);
 
@@ -169,14 +173,16 @@ int main(int argc, char *argv[]){
             offset = 44L;
         }
 
-        // map the file to memory
-        void *file_map = mmap(NULL, sz, PROT_READ, MAP_PRIVATE, fileno(fd), 0);
-        if(file_map == MAP_FAILED) {
-            printf("mmap failure %d\n", errno);
-            return 3;
-        }
+		fseek(fd, 0L, SEEK_SET);
 
-        int16_t *file_data = (int16_t *)(file_map + offset);
+        // read the file
+		uint8_t *file = (uint8_t *)calloc(1, sz);
+		if (fread(file, 1, sz, fd) != sz) {
+			printf("reading file failed\n");
+			return 4;
+		}
+
+		int16_t *file_data = (int16_t *)(file + offset);
         size_t num_shorts = (sz - offset) / 2;
 
         // For synchronous mode, it's possible to feed the entire thing at once
@@ -190,7 +196,7 @@ int main(int argc, char *argv[]){
 
         printf("\ndone\n");
 
-        munmap(file_map, sz);
+		free(file);
         fclose(fd);
     }
 

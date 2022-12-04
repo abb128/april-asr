@@ -113,7 +113,7 @@ bool read_header(ModelFile model) {
 }
 
 ModelFile model_read(const char *path) {
-    FILE *fd = fopen(path, "r");
+    FILE *fd = fopen(path, "rb");
     if(!fd) return NULL;
 
     ModelFile model = (ModelFile)calloc(1, sizeof(struct ModelFile_i));

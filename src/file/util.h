@@ -1,6 +1,18 @@
 #ifndef _APRIL_MODEL_FILE_UTIL
 #define _APRIL_MODEL_FILE_UTIL
 
+#ifdef _MSC_VER
+
+// Assuming Windows is always little-endian
+#define le32toh(x) x
+#define le64toh(x) x
+
+#else
+#include <endian.h>
+#endif
+
+#include <stdint.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include "log.h"
 

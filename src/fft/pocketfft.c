@@ -31,6 +31,10 @@
 #define WARN_UNUSED_RESULT
 #endif
 
+#ifdef _MSC_VER
+#define restrict __restrict
+#endif
+
 // adapted from https://stackoverflow.com/questions/42792939/
 // CAUTION: this function only works for arguments in the range [-0.25; 0.25]!
 static void my_sincosm1pi (double a, double *restrict res)
