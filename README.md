@@ -2,8 +2,13 @@
 
 aprilasr is a minimal library that provides an API for offline streaming speech-to-text applications
 
-## Language support
-Currently only a C API is available.
+## Status
+This library is currently under development. Some features are unimplemented, it may have bugs and crashes, and there may be significant changes to the API. It may not yet be production-ready.
+
+Furthermore, there's only one model that only does English and has some accuracy issues at that.
+
+### Language support
+Currently only a C API is available, language bindings for other languages have not yet been developed.
 
 ## Example
 An example use of this library is provided in `example.cpp`. It can perform speech recognition on a wave file, or do streaming recognition by reading stdin.
