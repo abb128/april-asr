@@ -17,6 +17,9 @@ if(NOT ONNXRuntime_FOUND)
   message(FATAL_ERROR "Could not find ONNXRuntime")
 endif()
 
+if (DEFINED ENV{APRIL_DEBUG_SAVE_AUDIO})
+    add_compile_definitions(APRIL_DEBUG_SAVE_AUDIO)
+endif()
 
 set(april_sources
   src/init.c
