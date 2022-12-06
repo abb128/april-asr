@@ -1,3 +1,13 @@
+Copyright (c) abb128, 2022
+All rights reserved.
+
+
+A license is yet to be picked
+
+
+
+This project uses some open-source libraries. Their licenses and copyright notices are below.
+
 https://github.com/microsoft/onnxruntime/blob/main/LICENSE
 MIT License
 

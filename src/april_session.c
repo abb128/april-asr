@@ -182,12 +182,19 @@ void aas_finalize_tokens(AprilASRSession aas) {
 }
 
 bool aas_emit_token(AprilASRSession aas, AprilToken *new_token, bool force){
-    if((!force) && (aas->last_handler_call_head == (aas->active_token_head + 1))
-        && (aas->active_tokens[aas->active_token_head].token == new_token->token)
-    ) {
-        return false;
+    if(new_token != NULL) {
+        if((!force) && (aas->last_handler_call_head == (aas->active_token_head + 1))
+            && (aas->active_tokens[aas->active_token_head].token == new_token->token)
+        ) {
+            return false;
+        }
+
+        aas->active_tokens[aas->active_token_head++] = *new_token;
+    } else {
+        if((!force) && (aas->last_handler_call_head == (aas->active_token_head))) {
+            return false;
+        }
     }
-    aas->active_tokens[aas->active_token_head++] = *new_token;
 
     aas->handler(
         aas->userdata,
@@ -226,7 +233,7 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
 
     // If no emissions in a while, ignore early_emit.
     // Helps prevent starting with stray " I" or similar phenomena
-    if(aas->runs_since_emission > 90) early_emit = 0.0f;
+    //if(aas->runs_since_emission > 90) early_emit = 0.0f;
 
     float blank_val = logits[blank];
     bool is_blank = (blank_val - early_emit) > max_val;
@@ -254,9 +261,13 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
 
         // If current token is blank, but it's reasonably confident, emit
         bool reasonably_confident = (!is_equal_to_previous) && (max_val > (blank_val - 4.0f));
+        bool been_bit_long_silence = aas->runs_since_emission >= 20; // TODO: Use a precise number like 1 seconds
         bool been_long_silence = aas->runs_since_emission >= 50; // TODO: Use a precise number like 2.2 seconds
 
-        if(reasonably_confident) {
+        if(been_bit_long_silence && (!been_long_silence)){
+            // in case reasonably confident prediction was output previously
+            aas_emit_token(aas, NULL, false);
+        }else if(reasonably_confident) {
             token.logprob -= 8.0;
             if(aas_emit_token(aas, &token, false)) {
                 assert(aas->active_token_head > 0);
@@ -283,7 +294,7 @@ bool aas_infer(AprilASRSession aas){
     while(fbank_pull_segments( aas->fbank, aas->x.data, sizeof(float)*SHAPE_PRODUCT3(aas->model->x_dim) )){
         aas_run_encoder(aas);
 
-        float early_emit = 3.0f;
+        float early_emit = 1.5f;
         for(int i=0; i<8; i++){
             early_emit -= 1.0f;
             aas_run_joiner(aas);
