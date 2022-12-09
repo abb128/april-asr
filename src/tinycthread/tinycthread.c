@@ -826,7 +826,7 @@ int tss_set(tss_t key, void *val)
     if (data == NULL)
     {
       return thrd_error;
-	}
+  }
 
     data->value = NULL;
     data->key = key;
@@ -849,7 +849,7 @@ int tss_set(tss_t key, void *val)
     if (!TlsSetValue(key, data))
     {
       free (data);
-	  return thrd_error;
+    return thrd_error;
     }
   }
   data->value = val;

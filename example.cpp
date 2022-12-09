@@ -110,14 +110,14 @@ int main(int argc, char *argv[]){
     // and by re-using the same AprilASRModel the relative memory use is low.
     // However, it's important that the AprilASRModel does not get freed
     // before all of its sessions.
-	AprilConfig config = { 0 };
-	config.handler = handler;
-	config.userdata = (void*)&some_internal_state;
+    AprilConfig config = { 0 };
+    config.handler = handler;
+    config.userdata = (void*)&some_internal_state;
 
-	// In this example we just want to perform recognition on an audio
-	// file synchronously and exit once complete. In a real application
-	// you may want to use asynchronous recognition instead
-	config.flags = ARPIL_CONFIG_FLAG_SYNCHRONOUS;
+    // In this example we just want to perform recognition on an audio
+    // file synchronously and exit once complete. In a real application
+    // you may want to use asynchronous recognition instead
+    config.flags = ARPIL_CONFIG_FLAG_SYNCHRONOUS;
 
     AprilASRSession session = aas_create_session(model, config);
 
@@ -173,16 +173,16 @@ int main(int argc, char *argv[]){
             offset = 44L;
         }
 
-		fseek(fd, 0L, SEEK_SET);
+        fseek(fd, 0L, SEEK_SET);
 
         // read the file
-		uint8_t *file = (uint8_t *)calloc(1, sz);
-		if (fread(file, 1, sz, fd) != sz) {
-			printf("reading file failed\n");
-			return 4;
-		}
+        uint8_t *file = (uint8_t *)calloc(1, sz);
+        if (fread(file, 1, sz, fd) != sz) {
+            printf("reading file failed\n");
+            return 4;
+        }
 
-		int16_t *file_data = (int16_t *)(file + offset);
+        int16_t *file_data = (int16_t *)(file + offset);
         size_t num_shorts = (sz - offset) / 2;
 
         // For synchronous mode, it's possible to feed the entire thing at once
@@ -196,7 +196,7 @@ int main(int argc, char *argv[]){
 
         printf("\ndone\n");
 
-		free(file);
+        free(file);
         fclose(fd);
     }
 
