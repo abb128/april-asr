@@ -5,6 +5,11 @@
 #define ASSERT_OR_RETURN_NULL(expr) if(!(expr)) { LOG_WARNING("Model: assertion " #expr " failed, line %d", __LINE__); return NULL; }
 #define ASSERT_OR_FREE_AAM_AND_RETURN_NULL(aam, expr) if(!(expr)) { LOG_WARNING("Model: assertion " #expr " failed, line %d", __LINE__); aam_free(aam); return NULL; }
 AprilASRModel aam_create_model(const char *model_path) {
+    if(g_ort == NULL) {
+        LOG_ERROR("aam: g_ort is NULL, please make sure to call aam_api_init!");
+        return NULL;
+    }
+    
     ModelFile file = model_read(model_path);
     if(file == NULL) {
         LOG_ERROR("aam: failed to read file");

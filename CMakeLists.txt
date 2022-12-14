@@ -45,12 +45,10 @@ endif()
 include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src ${ORT_INCLUDE_DIR})
 
 add_library(aprilasr_static STATIC ${april_sources})
+target_link_libraries(aprilasr_static ONNXRuntime::ONNXRuntime)
+
+add_library(aprilasr SHARED ${april_sources})
+target_link_libraries(aprilasr ONNXRuntime::ONNXRuntime)
 
 add_executable(main example.cpp)
-
 target_link_libraries(main PRIVATE aprilasr_static ONNXRuntime::ONNXRuntime)
-
-add_library(aprilasr ${april_sources})
-
-target_link_libraries(aprilasr_static ONNXRuntime::ONNXRuntime)
-target_link_libraries(aprilasr ONNXRuntime::ONNXRuntime)
