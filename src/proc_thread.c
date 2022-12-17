@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2022 abb128
+ * 
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3.
+ * 
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include <stdbool.h>
 #include <stdlib.h>
 #include "log.h"
@@ -75,7 +91,7 @@ void pt_terminate(ProcThread thread) {
     for(int i=0; i<8; i++) pt_raise(thread, PT_FLAG_KILL);
 
     int res;
-    // TODO: Sometimes hangs here
+    // TODO: Sometimes hangs here(?)
     if(thrd_join(thread->thrd, &res) != thrd_success){
         LOG_ERROR("Failed to join thread!");
         return;
