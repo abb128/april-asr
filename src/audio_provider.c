@@ -45,7 +45,7 @@ AudioProvider ap_create() {
     return ap;
 }
 
-void ap_push_audio(AudioProvider ap, const short *audio, size_t short_count) {
+bool ap_push_audio(AudioProvider ap, const short *audio, size_t short_count) {
     if(short_count > (MAX_AUDIO / 2)) {
         LOG_WARNING("AudioProvider is being given a lot of audio (%zu samples), please reduce", short_count);
     }
@@ -56,7 +56,7 @@ void ap_push_audio(AudioProvider ap, const short *audio, size_t short_count) {
                           || ((ap->tail > ap->head) && ((ap->tail + short_count) > (MAX_AUDIO + ap->head)));
         if(will_overflow){
             LOG_WARNING("Can't keep up! Attempted to write %zu samples", short_count);
-            return;
+            return false;
         }
 
         size_t num_shorts_to_write = MIN(short_count, MAX_AUDIO - ap->tail);
@@ -66,6 +66,8 @@ void ap_push_audio(AudioProvider ap, const short *audio, size_t short_count) {
         short_count -= num_shorts_to_write;
         audio_head += num_shorts_to_write;
     }
+
+    return true;
 }
 
 short *ap_pull_audio(AudioProvider ap, size_t *short_count) {

@@ -68,7 +68,12 @@ typedef enum AprilResultType {
 
     // Specifies that the result is final. Future calls will start from
     // empty and will not contain any of the given text.
-    APRIL_RESULT_RECOGNITION_FINAL
+    APRIL_RESULT_RECOGNITION_FINAL,
+
+    // If in non-synchronous mode, this may be called when the internal
+    // audio buffer is full and processing can't keep up.
+    // It will be called with count = 0, tokens = NULL
+    APRIL_RESULT_ERROR_CANT_KEEP_UP
 } AprilResultType;
 
 typedef struct AprilToken {

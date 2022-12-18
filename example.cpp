@@ -61,6 +61,14 @@ void handler(void *userdata, AprilResultType result, size_t count, const AprilTo
         case APRIL_RESULT_RECOGNITION_PARTIAL:
             printf("- ");
             break;
+        case APRIL_RESULT_ERROR_CANT_KEEP_UP:
+            // Here, this is never called since ARPIL_CONFIG_FLAG_SYNCHRONOUS
+            // is specified, but it is included here for demonstration
+            assert(tokens == NULL);
+            assert(count == 0);
+
+            printf("Can't keep up!");
+            return;
         default:
             assert(false);
     }

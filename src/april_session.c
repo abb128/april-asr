@@ -327,8 +327,17 @@ void _aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count);
 void aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count) {
     if(session->sync) return _aas_feed_pcm16(session, pcm16, short_count);
 
-    ap_push_audio(session->provider, pcm16, short_count);
+    bool success = ap_push_audio(session->provider, pcm16, short_count);
     pt_raise(session->thread, PT_FLAG_AUDIO);
+
+    if(!success){
+        session->handler(
+            session->userdata,
+            APRIL_RESULT_ERROR_CANT_KEEP_UP,
+            0,
+            NULL
+        );
+    }
 }
 
 
