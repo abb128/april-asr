@@ -52,8 +52,11 @@ bool ap_push_audio(AudioProvider ap, const short *audio, size_t short_count) {
 
     size_t audio_head = 0;
     while(short_count > 0){
-        bool will_overflow = ((ap->tail < ap->head) && ((ap->tail + short_count) > ap->head))
-                          || ((ap->tail > ap->head) && ((ap->tail + short_count) > (MAX_AUDIO + ap->head)));
+        size_t num_samples_available = (ap->tail > ap->head) ? (ap->tail - ap->head) : ((MAX_AUDIO - ap->head) + ap->tail);
+        if(ap->tail == ap->head) num_samples_available = 0;
+         
+        bool will_overflow = (num_samples_available + short_count) >= MAX_AUDIO;
+
         if(will_overflow){
             LOG_WARNING("Can't keep up! Attempted to write %zu samples", short_count);
             return false;
