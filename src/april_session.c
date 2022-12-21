@@ -68,7 +68,7 @@ AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config) {
 
     aas->handler = config.handler;
     aas->userdata = config.userdata;
-    aas->sync = (config.flags & ARPIL_CONFIG_FLAG_SYNCHRONOUS) != 0;
+    aas->sync = (config.flags & ARPIL_CONFIG_FLAG_SYNCHRONOUS_BIT) != 0;
     if(aas->handler == NULL) {
         LOG_ERROR("No handler provided! A handler is required, please provide a handler");
         aas_free(aas);
@@ -257,6 +257,10 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
 
     AprilToken token = { get_token(params, max_idx), max_val };
 
+    // works for English and other latin languages, may need to do something
+    // different here for other languages like Chinese
+    if (token.token[0] == ' ') token.flags |= APRIL_TOKEN_FLAG_WORD_BOUNDARY_BIT;
+
     // If current token is non-blank, emit and return
     if(!is_blank) {
         aas->runs_since_emission = 0;
@@ -264,7 +268,8 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
         aas_update_context(aas, (int64_t)max_idx);
 
         bool is_final = (aas->active_token_head >= (MAX_ACTIVE_TOKENS - 2))
-            || ((token.token[0] == ' ') && (aas->active_token_head >= (MAX_ACTIVE_TOKENS / 2)));
+            || ((token.flags & APRIL_TOKEN_FLAG_WORD_BOUNDARY_BIT)
+                && (aas->active_token_head >= (MAX_ACTIVE_TOKENS / 2)));
 
         if(is_final) aas_finalize_tokens(aas);
         aas_emit_token(aas, &token, true);

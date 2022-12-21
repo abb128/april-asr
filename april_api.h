@@ -76,6 +76,12 @@ typedef enum AprilResultType {
     APRIL_RESULT_ERROR_CANT_KEEP_UP
 } AprilResultType;
 
+typedef enum AprilTokenFlagBits {
+    // If set, this token marks the start of a new word. In English, this
+    // is equivalent to (token[0] == ' ')
+    APRIL_TOKEN_FLAG_WORD_BOUNDARY_BIT = 0x00000001
+} AprilTokenFlagBits;
+
 typedef struct AprilToken {
     // Null-terminated string. The string contains its own formatting,
     // for example it may start with a space to denote a new word, or
@@ -85,6 +91,9 @@ typedef struct AprilToken {
 
     // Log probability of this being the correct token
     float logprob;
+
+    // See AprilTokenFlagBits
+    AprilTokenFlagBits flags;
 } AprilToken;
 
 // (void* userdata, AprilResultType result, size_t count, const AprilToken *tokens);
@@ -92,11 +101,14 @@ typedef struct AprilToken {
 // count may be 0, and if so then tokens may be NULL.
 typedef void(*AprilRecognitionResultHandler)(void*, AprilResultType, size_t, const AprilToken*);
 
-// If set, calls to `aas_feed_pcm16` and `aas_flush` will block and perform
-// expensive calculations, and the handler will be called on the same thread
-// that calls those functions. If not set, handler is called from another thread
-// whenever processing is finished.
-#define ARPIL_CONFIG_FLAG_SYNCHRONOUS 1
+
+typedef enum AprilConfigFlagBits {
+    // If set, calls to `aas_feed_pcm16` and `aas_flush` will be very slow
+    // as it will perform expensive calculations. If not set, then the
+    // session will be in asynchronous mode, calls will be fast, and the
+    // handler gets called from another thread whenever processing is finished.
+    ARPIL_CONFIG_FLAG_SYNCHRONOUS_BIT = 0x00000001
+} AprilConfigFlagBits;
 
 typedef struct AprilConfig {
     AprilSpeakerID speaker;
@@ -106,7 +118,8 @@ typedef struct AprilConfig {
     AprilRecognitionResultHandler handler;
     void *userdata;
 
-    int flags;
+    // See AprilConfigFlagBits
+    AprilConfigFlagBits flags;
 } AprilConfig;
 
 // Creates a session with a given model. A model may have many sessions
