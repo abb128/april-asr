@@ -319,7 +319,7 @@ bool aas_infer(AprilASRSession aas){
         aas_run_encoder(aas);
 
         float early_emit = 2.0f;
-        for(int i=0; i<1; i++){
+        for(int i=0; i<2; i++){
             early_emit -= 1.0f;
             aas_run_joiner(aas);
             if(aas_process_logits(aas, early_emit > 0.0f ? early_emit : 0.0f)) break;
