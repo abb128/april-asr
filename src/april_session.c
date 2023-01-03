@@ -222,6 +222,13 @@ bool aas_emit_token(AprilASRSession aas, AprilToken *new_token, bool force){
     return true;
 }
 
+void aas_clear_context(AprilASRSession aas) {
+    if(aas->context.data[0] == aas->model->params.blank_id) return;
+
+    for(int i=0; i<aas->context_size; i++)
+        aas_update_context(aas, aas->model->params.blank_id);
+}
+
 // Processes current data in aas->logits. Returns true if new token was
 // added, else returns false if no new data is available. Updates
 // aas->context and aas->active_tokens. Uses basic greedy search algorithm.
@@ -282,6 +289,7 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
         
         if (been_long_silence) {
             aas_finalize_tokens(aas);
+            aas_clear_context(aas);
         } else if(reasonably_confident) {
             token.logprob -= 8.0;
             if(aas_emit_token(aas, &token, false)) {
@@ -408,6 +416,7 @@ void _aas_flush(AprilASRSession session) {
         aas_infer(session);
 
     aas_finalize_tokens(session);
+    aas_clear_context(session);
 }
 
 
