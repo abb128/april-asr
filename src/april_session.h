@@ -54,12 +54,14 @@ struct AprilASRSession_i {
     size_t last_handler_call_head;
 
     bool was_flushed;
-    uint64_t runs_since_emission;
 
     bool sync;
-    bool realtime; // TODO
+    bool force_realtime; // TODO: Adjust segment step, etc to force realtime operation
     AudioProvider provider;
     ProcThread thread;
+
+    size_t current_time_ms;
+    size_t last_emission_time_ms;
 
     AprilRecognitionResultHandler handler;
     void *userdata;

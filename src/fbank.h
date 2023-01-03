@@ -62,6 +62,10 @@ OnlineFBank make_fbank(FBankOptions opts);
 void fbank_accept_waveform(OnlineFBank fbank, const float *wave, size_t wave_count);
 bool fbank_pull_segments(OnlineFBank fbank, float *output, size_t output_count);
 bool fbank_flush(OnlineFBank fbank); // Returns false if no more left to flush
+
+// Returns how many milliseconds of audio was consumed
+// in the last `fbank_pull_segments` call
+size_t fbank_get_segments_stride_ms(OnlineFBank fbank);
 void free_fbank(OnlineFBank fbank);
 
 #endif
