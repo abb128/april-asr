@@ -299,6 +299,10 @@ bool fbank_pull_segments(OnlineFBank fbank, float *output, size_t output_count) 
     return true;
 }
 
+size_t fbank_get_segments_stride_ms(OnlineFBank fbank) {
+    return fbank->opts.pull_segment_step * fbank->opts.frame_shift_ms;
+}
+
 void free_fbank(OnlineFBank fbank) {
     free(fbank->ret);
     free(fbank->data);
