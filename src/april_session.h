@@ -56,7 +56,7 @@ struct AprilASRSession_i {
     bool was_flushed;
 
     bool sync;
-    bool force_realtime; // TODO: Adjust segment step, etc to force realtime operation
+    bool force_realtime;
     AudioProvider provider;
     ProcThread thread;
 

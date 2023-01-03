@@ -17,6 +17,7 @@
 #include "log.h"
 #include "params.h"
 #include "april_session.h"
+#include <time.h>
 
 void run_aas_callback(void *userdata, int flags);
 
@@ -52,6 +53,8 @@ AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config) {
     aas->dout_init = false;
     aas->hc_use_0 = false;
     aas->active_token_head = 0;
+
+    aas->force_realtime = true; //TODO
 
     aas->was_flushed = false;
 
@@ -314,6 +317,10 @@ bool aas_infer(AprilASRSession aas){
     }
 
     bool any_inferred = false;
+
+    size_t start_time_ms = aas->current_time_ms;
+    clock_t begin = clock();
+
     while(fbank_pull_segments( aas->fbank, aas->x.data, sizeof(float)*SHAPE_PRODUCT3(aas->model->x_dim) )){
         aas->current_time_ms += fbank_get_segments_stride_ms(aas->fbank);
         aas_run_encoder(aas);
@@ -326,6 +333,23 @@ bool aas_infer(AprilASRSession aas){
         }
 
         any_inferred = true;
+    }
+
+    if(aas->force_realtime && (aas->current_time_ms > start_time_ms)) {
+        clock_t end = clock();
+
+        size_t time_processed_ms = aas->current_time_ms - start_time_ms;
+        //size_t time_taken_ms = (size_t)(difftime(end, begin) * 1000.0);
+        clock_t difference = end - begin;
+        size_t difference_ms = (size_t)(difference / (CLOCKS_PER_SEC / 1000));
+
+
+        if(difference_ms > (time_processed_ms * 8 / 10)){
+            printf("SLOW! Took %dms to process %dms\n", difference_ms, time_processed_ms);
+            fbank_increase_speed(aas->fbank);
+        }else {
+            fbank_decrease_speed(aas->fbank);
+        }
     }
 
     return any_inferred;

@@ -66,6 +66,11 @@ bool fbank_flush(OnlineFBank fbank); // Returns false if no more left to flush
 // Returns how many milliseconds of audio was consumed
 // in the last `fbank_pull_segments` call
 size_t fbank_get_segments_stride_ms(OnlineFBank fbank);
+
+void fbank_increase_speed(OnlineFBank fbank);
+void fbank_decrease_speed(OnlineFBank fbank);
+bool fbank_is_speedy(OnlineFBank fbank);
+
 void free_fbank(OnlineFBank fbank);
 
 #endif
