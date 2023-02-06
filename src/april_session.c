@@ -198,6 +198,49 @@ void aas_finalize_tokens(AprilASRSession aas) {
     aas->active_token_head = 0;
 }
 
+void aas_finalize_previous_words(AprilASRSession aas, const AprilToken *new_token){
+    if(aas->active_token_head == 0) return;
+
+    if(new_token->flags & APRIL_TOKEN_FLAG_WORD_BOUNDARY_BIT) {
+        // The new token starts a new word, so we can break here
+        return aas_finalize_tokens(aas);
+    }else{
+        // The new token continues the existing word. We need to move
+        // the entire word into the next active_tokens
+
+        // Find the start of the existing word
+        size_t start_of_word = MAX_ACTIVE_TOKENS;
+        for(size_t i=aas->active_token_head - 1; i > 2; i--){
+            if(aas->active_tokens[i].flags & APRIL_TOKEN_FLAG_WORD_BOUNDARY_BIT) {
+                start_of_word = i;
+            }
+        }
+
+        if(start_of_word == MAX_ACTIVE_TOKENS) {
+            // Couldn't find start of word, no good way to do this
+            return aas_finalize_tokens(aas);
+        }
+
+        // Call FINAL excluding the current word
+        aas->handler(
+            aas->userdata,
+            APRIL_RESULT_RECOGNITION_FINAL,
+            start_of_word,
+            aas->active_tokens
+        );
+
+        // Move the current word to start of tokens
+        memmove(
+            aas->active_tokens,
+            &aas->active_tokens[start_of_word],
+            sizeof(AprilToken) * (aas->active_token_head - start_of_word) // is this right? or off by one?
+        );
+
+        // Update active_token_head
+        aas->active_token_head -= start_of_word;
+    }
+}
+
 bool aas_emit_silence(AprilASRSession aas) {
     if(!aas->emitted_silence){
         aas->emitted_silence = true;
@@ -284,11 +327,15 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
 
         aas_update_context(aas, (int64_t)max_idx);
 
-        bool is_final = (aas->active_token_head >= (MAX_ACTIVE_TOKENS - 2))
-            || ((token.flags & APRIL_TOKEN_FLAG_WORD_BOUNDARY_BIT)
-                && (aas->active_token_head >= (MAX_ACTIVE_TOKENS / 2)));
+        bool is_final = (aas->active_token_head >= (MAX_ACTIVE_TOKENS - 1));
+        if(is_final) aas_finalize_previous_words(aas, &token);
+        
+        is_final = (aas->active_token_head >= (MAX_ACTIVE_TOKENS - 1));
+        if(is_final) {
+            LOG_ERROR("No room left even after finalizing previous words");
+            aas->active_token_head = 0;
+        }
 
-        if(is_final) aas_finalize_tokens(aas);
         aas_emit_token(aas, &token, true);
 
         aas->emitted_silence = false;
