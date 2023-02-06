@@ -213,6 +213,7 @@ void aas_finalize_previous_words(AprilASRSession aas, const AprilToken *new_toke
         for(size_t i=aas->active_token_head - 1; i > 2; i--){
             if(aas->active_tokens[i].flags & APRIL_TOKEN_FLAG_WORD_BOUNDARY_BIT) {
                 start_of_word = i;
+                break;
             }
         }
 
