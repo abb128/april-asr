@@ -241,7 +241,7 @@ void aas_finalize_previous_words(AprilASRSession aas, const AprilToken *new_toke
     }
 }
 
-bool aas_emit_silence(AprilASRSession aas) {
+void aas_emit_silence(AprilASRSession aas) {
     if(!aas->emitted_silence){
         aas->emitted_silence = true;
 

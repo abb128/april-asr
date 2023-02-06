@@ -26,7 +26,7 @@
 #include "audio_provider.h"
 #include "proc_thread.h"
 
-#define MAX_ACTIVE_TOKENS 256
+#define MAX_ACTIVE_TOKENS 72
 
 struct AprilASRSession_i {
     AprilASRModel model;
