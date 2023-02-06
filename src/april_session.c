@@ -435,6 +435,7 @@ void _aas_flush(AprilASRSession session) {
 
     aas_finalize_tokens(session);
     aas_clear_context(session);
+    aas_emit_silence(session);
 }
 
 
