@@ -61,6 +61,8 @@ void handler(void *userdata, AprilResultType result, size_t count, const AprilTo
         case APRIL_RESULT_RECOGNITION_PARTIAL:
             printf("- ");
             break;
+        case APRIL_RESULT_SILENCE:
+            break;
         case APRIL_RESULT_ERROR_CANT_KEEP_UP:
             // Here, this is never called since ARPIL_CONFIG_FLAG_SYNCHRONOUS_BIT
             // is specified, but it is included here for demonstration
@@ -71,6 +73,7 @@ void handler(void *userdata, AprilResultType result, size_t count, const AprilTo
             return;
         default:
             assert(false);
+            return;
     }
 
     for(int t=0; t<count; t++){

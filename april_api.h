@@ -73,7 +73,12 @@ typedef enum AprilResultType {
     /* If in non-synchronous mode, this may be called when the internal
        audio buffer is full and processing can't keep up.
        It will be called with count = 0, tokens = NULL */
-    APRIL_RESULT_ERROR_CANT_KEEP_UP
+    APRIL_RESULT_ERROR_CANT_KEEP_UP,
+
+    /* Specifies that there has been some silence. Will not be called
+       repeatedly.
+       It will be called with count = 0, tokens = NULL */
+    APRIL_RESULT_SILENCE
 } AprilResultType;
 
 typedef enum AprilTokenFlagBits {

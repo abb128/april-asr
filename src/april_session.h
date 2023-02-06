@@ -53,6 +53,7 @@ struct AprilASRSession_i {
     size_t active_token_head;
     size_t last_handler_call_head;
 
+    bool emitted_silence;
     bool was_flushed;
 
     bool sync;

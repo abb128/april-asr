@@ -53,6 +53,7 @@ AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config) {
     aas->hc_use_0 = false;
     aas->active_token_head = 0;
 
+    aas->emitted_silence = true;
     aas->was_flushed = false;
 
     assert(aas->fbank          != NULL);
@@ -68,6 +69,7 @@ AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config) {
     aas->handler = config.handler;
     aas->userdata = config.userdata;
     aas->sync = (config.flags & ARPIL_CONFIG_FLAG_SYNCHRONOUS_BIT) != 0;
+    
     if(aas->handler == NULL) {
         LOG_ERROR("No handler provided! A handler is required, please provide a handler");
         aas_free(aas);
@@ -196,6 +198,19 @@ void aas_finalize_tokens(AprilASRSession aas) {
     aas->active_token_head = 0;
 }
 
+bool aas_emit_silence(AprilASRSession aas) {
+    if(!aas->emitted_silence){
+        aas->emitted_silence = true;
+
+        aas->handler(
+            aas->userdata,
+            APRIL_RESULT_SILENCE,
+            0,
+            NULL
+        );
+    }
+}
+
 bool aas_emit_token(AprilASRSession aas, AprilToken *new_token, bool force){
     if(new_token != NULL) {
         if((!force) && (aas->last_handler_call_head == (aas->active_token_head + 1))
@@ -275,6 +290,8 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
 
         if(is_final) aas_finalize_tokens(aas);
         aas_emit_token(aas, &token, true);
+
+        aas->emitted_silence = false;
     } else {
         size_t time_since_emission_ms = aas->current_time_ms - aas->last_emission_time_ms;
 
@@ -290,6 +307,7 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
         if (been_long_silence) {
             aas_finalize_tokens(aas);
             aas_clear_context(aas);
+            aas_emit_silence(aas);
         } else if(reasonably_confident) {
             token.logprob -= 8.0;
             if(aas_emit_token(aas, &token, false)) {
