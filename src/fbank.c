@@ -176,7 +176,6 @@ void fbank_accept_waveform(OnlineFBank fbank, float *wave, size_t wave_count) {
         sonicSetSpeed(fbank->sonic_stream, (float)fbank->speed_factor);
         sonicWriteFloatToStream(fbank->sonic_stream, wave, wave_count);
 
-
         size_t wave_count_new = sonicSamplesAvailable(fbank->sonic_stream);
         if(wave_count_new < wave_count){
             wave_count = wave_count_new;
@@ -184,9 +183,6 @@ void fbank_accept_waveform(OnlineFBank fbank, float *wave, size_t wave_count) {
 
         sonicReadFloatFromStream(fbank->sonic_stream, wave, wave_count);
     }
-    FILE *fdbg = fopen("/tmp/wav.dat", "a");
-    fwrite(wave, wave_count, sizeof(float), fdbg);
-    fclose(fdbg);
 
     for(ssize_t i=0;; i++) {
         if((fbank->temp_segment_avail + 1) > fbank->temp_segments_y){

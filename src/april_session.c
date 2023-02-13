@@ -421,7 +421,6 @@ bool aas_infer(AprilASRSession aas){
 
     if(aas->force_realtime && (aas->time_since_update_speed > 2000)) {
         fbank_set_speed(aas->fbank, aas->speed_needed > 1.0 ? aas->speed_needed : 1.0);
-        printf("speed: %.2f\n", aas->speed_needed);
 
         aas->time_since_update_speed = 0;
     }
