@@ -1,15 +1,15 @@
 /*
  * Copyright (C) 2022 abb128
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
@@ -79,17 +79,17 @@ bool read_params_from_fd(ModelParameters *params, FILE *fd) {
     ASSERT_OR_RETURN_FALSE((params->frame_length_ms > 0) && (params->frame_length_ms <= 5000));
     ASSERT_OR_RETURN_FALSE((params->mel_low > 0) && (params->mel_low < params->sample_rate));
     ASSERT_OR_RETURN_FALSE((params->mel_high == 0) || (params->mel_high > params->mel_low));
-    
+
 
     // Read all piece lengths and figure out the maximum
     size_t tokens_start = ftell(fd);
-    
+
     params->token_length = 0;
     for(int i=0; i<params->token_count; i++){
         int32_t token_len = mfu_read_i32(fd);
         if(token_len > (int32_t)params->token_length)
             params->token_length = token_len;
-        
+
         fseek(fd, token_len, SEEK_CUR);
     }
     params->token_length += 1; // for '\0' byte
@@ -101,7 +101,7 @@ bool read_params_from_fd(ModelParameters *params, FILE *fd) {
     fseek(fd, tokens_start, SEEK_SET);
     for(int i=0; i<params->token_count; i++){
         int32_t token_len = mfu_read_i32(fd);
-        
+
         ASSERT_OR_RETURN_FALSE(token_len < (int32_t)params->token_length);
 
         fread(get_token(params, i), 1, token_len, fd);

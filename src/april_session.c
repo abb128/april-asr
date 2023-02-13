@@ -14,6 +14,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <time.h>
 #include "log.h"
 #include "params.h"
 #include "april_session.h"
@@ -68,7 +69,9 @@ AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config) {
 
     aas->handler = config.handler;
     aas->userdata = config.userdata;
-    aas->sync = (config.flags & ARPIL_CONFIG_FLAG_SYNCHRONOUS_BIT) != 0;
+    aas->sync = (config.flags & APRIL_CONFIG_FLAG_SYNCHRONOUS_BIT) != 0;
+    aas->force_realtime = (config.flags & APRIL_CONFIG_FLAG_REALTIME_BIT) != 0;
+    aas->speed_needed = 1.0;
     
     if(aas->handler == NULL) {
         LOG_ERROR("No handler provided! A handler is required, please provide a handler");
@@ -82,6 +85,10 @@ AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config) {
     }
 
     return aas;
+}
+
+float aas_realtime_get_speedup(AprilASRSession session) {
+    return session->force_realtime ? (float)session->speed_needed : 1.0f;
 }
 
 void aas_free(AprilASRSession session) {
@@ -381,17 +388,38 @@ bool aas_infer(AprilASRSession aas){
 
     bool any_inferred = false;
     while(fbank_pull_segments( aas->fbank, aas->x.data, sizeof(float)*SHAPE_PRODUCT3(aas->model->x_dim) )){
-        aas->current_time_ms += fbank_get_segments_stride_ms(aas->fbank);
+        size_t stride_ms = fbank_get_segments_stride_ms(aas->fbank);
+        aas->current_time_ms += stride_ms;
+
+        clock_t clock_start = clock();
+
         aas_run_encoder(aas);
 
         float early_emit = 2.0f;
-        for(int i=0; i<2; i++){
+        for(int i=0; i<3; i++){
             early_emit -= 1.0f;
             aas_run_joiner(aas);
             if(aas_process_logits(aas, early_emit > 0.0f ? early_emit : 0.0f)) break;
         }
 
+        clock_t clock_end = clock();
+
+        double time_used_ms = ((double)(clock_end - clock_start) * 1000.0) / ((double)CLOCKS_PER_SEC);
+        double stride_ms_d = (double)stride_ms;
+
+        double speed_needed = (time_used_ms * 1.1) / stride_ms_d;
+        aas->speed_needed = ((aas->speed_needed * 9.0) + speed_needed)/10.0;
+
+        aas->time_since_update_speed += stride_ms;
+
         any_inferred = true;
+    }
+
+    if(aas->force_realtime && (aas->time_since_update_speed > 2000)) {
+        fbank_set_speed(aas->fbank, aas->speed_needed > 1.0 ? aas->speed_needed : 1.0);
+        //printf("speed: %.2f\n", aas->speed_needed);
+
+        aas->time_since_update_speed = 0;
     }
 
     return any_inferred;

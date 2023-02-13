@@ -119,6 +119,8 @@ struct OnlineFBank_i {
     rfft_plan plan;
     double *data;
     double *ret;
+
+    double speed_factor;
 };
 
 OnlineFBank make_fbank(FBankOptions opts) {
@@ -154,17 +156,23 @@ OnlineFBank make_fbank(FBankOptions opts) {
     fbank->data = (double*)calloc(fbank->padded_window_size, sizeof(double));
     fbank->ret  = (double*)calloc(fbank->padded_window_size + 1, sizeof(double));
 
+    fbank->speed_factor = 1.0;
+
     return fbank;
 }
 
 void fbank_accept_waveform(OnlineFBank fbank, const float *wave, size_t wave_count) {
+    ssize_t shift = fbank->window_shift;
+    if(fbank->speed_factor != 1.0)
+        shift = (ssize_t)((double)shift * (double)fbank->speed_factor);
+
     for(ssize_t i=0;; i++) {
         if((fbank->temp_segment_avail + 1) > fbank->temp_segments_y){
             LOG_WARNING("fbank ran out of space. Please call fbank_pull_segments. Can't eat wave");
             return;
         }
 
-        ssize_t start_idx = i * fbank->window_shift - fbank->prev_leftover_count;
+        ssize_t start_idx = i * shift - fbank->prev_leftover_count;
         ssize_t end_idx = start_idx + fbank->padded_window_size;
 
         if(end_idx > wave_count){
@@ -297,6 +305,14 @@ bool fbank_pull_segments(OnlineFBank fbank, float *output, size_t output_count) 
     fbank->temp_segment_avail_f -= fbank->opts.pull_segment_step;
 
     return true;
+}
+
+void fbank_set_speed(OnlineFBank fbank, double factor) {
+    fbank->speed_factor = factor;
+}
+
+double fbank_get_speed(OnlineFBank fbank) {
+    return fbank->speed_factor;
 }
 
 size_t fbank_get_segments_stride_ms(OnlineFBank fbank) {

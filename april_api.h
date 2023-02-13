@@ -110,9 +110,17 @@ typedef void(*AprilRecognitionResultHandler)(void*, AprilResultType, size_t, con
 typedef enum AprilConfigFlagBits {
     /* If set, calls to `aas_feed_pcm16` and `aas_flush` will be very slow
        as it will perform expensive calculations. If not set, then the
-       session will be in asynchronous mode, calls will be fast, and the
-       handler gets called from another thread whenever processing is finished. */
-    ARPIL_CONFIG_FLAG_SYNCHRONOUS_BIT = 0x00000001
+       calculations will be done in a different thread, these calls will be
+       fast, and the handler gets called from another thread whenever
+       processing is finished. */
+    APRIL_CONFIG_FLAG_SYNCHRONOUS_BIT = 0x00000001,
+
+    /* If set, then the session will attempt to keep processing real-time.
+       If the system is not fast enough (e.g. takes longer than 1 second to
+       process 1 second of audio), then the input audio will be sped up such
+       that it keeps up. This may reduce accuracy. Use aas_realtime_get_speedup
+       to figure out the decrease in accuracy. */
+    APRIL_CONFIG_FLAG_REALTIME_BIT    = 0x00000002,
 } AprilConfigFlagBits;
 
 typedef struct AprilConfig {
@@ -138,6 +146,11 @@ void aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count);
 
 /* Processes any unprocessed samples and produces a final result. */
 void aas_flush(AprilASRSession session);
+
+/* If APRIL_CONFIG_FLAG_REALTIME_BIT is set, this may return a number >= 1.0
+   denoting the amount of input audio speedup. If not set, this will always
+   return 1.0 */
+float aas_realtime_get_speedup(AprilASRSession session);
 
 /* Frees the session, this must be called for all sessions before freeing
    the model. Saves state to a file if AprilSpeakerID was supplied. */
