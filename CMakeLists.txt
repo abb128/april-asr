@@ -32,6 +32,7 @@ set(april_sources
   src/ort_util.c
   src/file/model_file.c
   src/fft/pocketfft.c
+  src/sonic/sonic.c
 )
 
 CHECK_INCLUDE_FILE(threads.h HAVE_C11_THREADS)

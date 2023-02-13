@@ -56,10 +56,13 @@ typedef struct FBankOptions {
     // For example, if this is set to 4, then each call to fbank_pull_segments
     // will step over 4 segments
     int pull_segment_step;
+
+    // If false, speed feature will be unavailable
+    bool use_sonic;
 } FBankOptions;
 
 OnlineFBank make_fbank(FBankOptions opts);
-void fbank_accept_waveform(OnlineFBank fbank, const float *wave, size_t wave_count);
+void fbank_accept_waveform(OnlineFBank fbank, float *wave, size_t wave_count);
 bool fbank_pull_segments(OnlineFBank fbank, float *output, size_t output_count);
 bool fbank_flush(OnlineFBank fbank); // Returns false if no more left to flush
 

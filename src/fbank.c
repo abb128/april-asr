@@ -22,6 +22,7 @@
 #include <string.h>
 #include "fbank.h"
 #include "fft/pocketfft.h"
+#include "sonic/sonic.h"
 #include "log.h"
 
 #ifdef _MSC_VER
@@ -121,6 +122,7 @@ struct OnlineFBank_i {
     double *ret;
 
     double speed_factor;
+    sonicStream sonic_stream;
 };
 
 OnlineFBank make_fbank(FBankOptions opts) {
@@ -158,13 +160,33 @@ OnlineFBank make_fbank(FBankOptions opts) {
 
     fbank->speed_factor = 1.0;
 
+    if(opts.use_sonic) {
+        fbank->sonic_stream = sonicCreateStream(opts.sample_freq, 1);
+    } else {
+        fbank->sonic_stream = NULL;
+    }
+
     return fbank;
 }
 
-void fbank_accept_waveform(OnlineFBank fbank, const float *wave, size_t wave_count) {
-    ssize_t shift = fbank->window_shift;
-    if(fbank->speed_factor != 1.0)
-        shift = (ssize_t)((double)shift * (double)fbank->speed_factor);
+const float ZEROS[32768] = { 0 };
+void fbank_accept_waveform(OnlineFBank fbank, float *wave, size_t wave_count) {
+    if(wave == NULL) wave = ZEROS;
+    else if(fbank->sonic_stream != NULL) {
+        sonicSetSpeed(fbank->sonic_stream, (float)fbank->speed_factor);
+        sonicWriteFloatToStream(fbank->sonic_stream, wave, wave_count);
+
+
+        size_t wave_count_new = sonicSamplesAvailable(fbank->sonic_stream);
+        if(wave_count_new < wave_count){
+            wave_count = wave_count_new;
+        }
+
+        sonicReadFloatFromStream(fbank->sonic_stream, wave, wave_count);
+    }
+    FILE *fdbg = fopen("/tmp/wav.dat", "a");
+    fwrite(wave, wave_count, sizeof(float), fdbg);
+    fclose(fdbg);
 
     for(ssize_t i=0;; i++) {
         if((fbank->temp_segment_avail + 1) > fbank->temp_segments_y){
@@ -172,7 +194,7 @@ void fbank_accept_waveform(OnlineFBank fbank, const float *wave, size_t wave_cou
             return;
         }
 
-        ssize_t start_idx = i * shift - fbank->prev_leftover_count;
+        ssize_t start_idx = i * fbank->window_shift - fbank->prev_leftover_count;
         ssize_t end_idx = start_idx + fbank->padded_window_size;
 
         if(end_idx > wave_count){
@@ -320,6 +342,8 @@ size_t fbank_get_segments_stride_ms(OnlineFBank fbank) {
 }
 
 void free_fbank(OnlineFBank fbank) {
+    if(fbank->sonic_stream) sonicDestroyStream(fbank->sonic_stream);
+
     free(fbank->ret);
     free(fbank->data);
     destroy_rfft_plan(fbank->plan);

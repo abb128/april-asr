@@ -24,8 +24,14 @@ void run_aas_callback(void *userdata, int flags);
 AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config) {
     AprilASRSession aas = (AprilASRSession)calloc(1, sizeof(struct AprilASRSession_i));
 
+    aas->sync = (config.flags & APRIL_CONFIG_FLAG_SYNCHRONOUS_BIT) != 0;
+    aas->force_realtime = (config.flags & APRIL_CONFIG_FLAG_REALTIME_BIT) != 0;
+
+    FBankOptions fbank_opts = model->fbank_opts;
+    fbank_opts.use_sonic = aas->force_realtime;
+
     aas->model = model;
-    aas->fbank = make_fbank(model->fbank_opts);
+    aas->fbank = make_fbank(fbank_opts);
 
     ORT_ABORT_ON_ERROR(g_ort->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &aas->memory_info));
     OrtMemoryInfo *mi = aas->memory_info;
@@ -69,8 +75,6 @@ AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config) {
 
     aas->handler = config.handler;
     aas->userdata = config.userdata;
-    aas->sync = (config.flags & APRIL_CONFIG_FLAG_SYNCHRONOUS_BIT) != 0;
-    aas->force_realtime = (config.flags & APRIL_CONFIG_FLAG_REALTIME_BIT) != 0;
     aas->speed_needed = 1.0;
     
     if(aas->handler == NULL) {
@@ -417,7 +421,7 @@ bool aas_infer(AprilASRSession aas){
 
     if(aas->force_realtime && (aas->time_since_update_speed > 2000)) {
         fbank_set_speed(aas->fbank, aas->speed_needed > 1.0 ? aas->speed_needed : 1.0);
-        //printf("speed: %.2f\n", aas->speed_needed);
+        printf("speed: %.2f\n", aas->speed_needed);
 
         aas->time_since_update_speed = 0;
     }
@@ -494,7 +498,6 @@ void aas_flush(AprilASRSession session) {
     pt_raise(session->thread, PT_FLAG_FLUSH);
 }
 
-const float ZEROS[SEGSIZE] = { 0 };
 void _aas_flush(AprilASRSession session) {
     if(session->was_flushed) return;
 
@@ -504,7 +507,7 @@ void _aas_flush(AprilASRSession session) {
         aas_infer(session);
 
     for(int i=0; i<2; i++)
-        fbank_accept_waveform(session->fbank, ZEROS, SEGSIZE);
+        fbank_accept_waveform(session->fbank, NULL, SEGSIZE);
 
     while(fbank_flush(session->fbank))
         aas_infer(session);
