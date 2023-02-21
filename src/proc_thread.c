@@ -28,6 +28,7 @@
 int run_pt(void *userdata);
 
 struct ProcThread_i {
+    volatile bool initialized;
     volatile bool terminating;
     volatile int flags;
 
@@ -44,6 +45,7 @@ ProcThread pt_create(ProcThreadCallback callback, void *userdata) {
     ProcThread thread = (ProcThread)calloc(1, sizeof(struct ProcThread_i));
     if(thread == NULL) return NULL;
 
+    thread->initialized = false;
     thread->callback = callback;
     thread->userdata = userdata;
 
@@ -79,6 +81,7 @@ void pt_raise(ProcThread thread, int flag) {
         LOG_ERROR("Failed to unlock mutex in pt_raise!");
     }
 
+    while(!thread->initialized) {}
     if(cnd_signal(&thread->cond) != thrd_success){
         LOG_ERROR("Failed to signal cond!");
     }
@@ -91,7 +94,6 @@ void pt_terminate(ProcThread thread) {
     for(int i=0; i<8; i++) pt_raise(thread, PT_FLAG_KILL);
 
     int res;
-    // TODO: Sometimes hangs here(?)
     if(thrd_join(thread->thrd, &res) != thrd_success){
         LOG_ERROR("Failed to join thread!");
         return;
@@ -124,6 +126,7 @@ int run_pt(void *userdata){
     }
 
     for(;;){
+        thread->initialized = true;
         if(cnd_wait(&thread->cond, &thread->mutex) != thrd_success) {
             LOG_ERROR("Failed to wait for cond!");
             return 2;
