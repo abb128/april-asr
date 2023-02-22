@@ -1,4 +1,7 @@
 .cache
 .vs
-build
+build*
 lib
+**/__pycache__
+*.so
+*.egg-info
