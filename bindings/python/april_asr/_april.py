@@ -47,12 +47,14 @@ def _handle_result(userdata, result_type, num_tokens, tokens):
     
     self.callback(self.result_final, self.tokens)
 
+_HANDLER = _c.AprilRecognitionResultHandler(_handle_result)
+
 class Session:
     def __init__(self, model, callback, asynchronous=False):
         config = _c.AprilConfig()
         config.flags = _c.AprilConfigFlagBits()
         config.flags.value = 1 if not asynchronous else 0 # TODO: Maybe synchronous mode should be default in april api
-        config.handler = _c.AprilRecognitionResultHandler(_handle_result)
+        config.handler = _HANDLER
         config.userdata = id(self)
 
         self.model = model

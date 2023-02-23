@@ -20,6 +20,7 @@
 #include <stdbool.h>
 #include <math.h>
 #include <string.h>
+#include "common.h"
 #include "fbank.h"
 #include "fft/pocketfft.h"
 #include "sonic/sonic.h"

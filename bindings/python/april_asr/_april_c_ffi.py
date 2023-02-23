@@ -117,7 +117,7 @@ def _load_library():
         os.environ["PATH"] = dlldir + os.pathsep + os.environ["PATH"]
         if hasattr(os, "add_dll_directory"):
             os.add_dll_directory(dlldir)
-        return AprilFFI(os.path.join(dlldir, "libaprilasr.dll"))
+        return AprilFFI(os.path.join(dlldir, "aprilasr.dll"))
     elif sys.platform == "linux":
         return AprilFFI(os.path.join(dlldir, "libaprilasr.so"))
     elif sys.platform == "darwin":

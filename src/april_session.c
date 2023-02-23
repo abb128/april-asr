@@ -15,6 +15,7 @@
 */
 
 #include <time.h>
+#include "common.h"
 #include "log.h"
 #include "params.h"
 #include "april_session.h"

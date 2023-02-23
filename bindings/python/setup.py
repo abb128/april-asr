@@ -11,9 +11,16 @@ architecture = os.environ.get('APRIL_ARCHITECTURE', platform.architecture()[0])
 machine = os.environ.get('APRIL_MACHINE', platform.machine())
 
 # Copy precompiled libraries
-for lib in glob.glob(os.path.join(april_build, "src/libaprilasr.*")):
-    print("Adding library", lib)
-    shutil.copy(lib, "april_asr")
+PRECOMP_LIBS = [
+    "libaprilasr.so",
+    "Release/aprilasr.dll",
+    "../lib/lib/onnxruntime.dll"
+]
+
+for l in PRECOMP_LIBS:
+    for lib in glob.glob(os.path.join(april_build, l)):
+        print("Adding library", lib)
+        shutil.copy(lib, "april_asr")
 
 # Create OS-dependent, but Python-independent wheels.
 try:

@@ -18,6 +18,7 @@
 #define _APRIL_FBANK
 
 #include <stdbool.h>
+#include "common.h"
 
 struct OnlineFBank_i;
 typedef struct OnlineFBank_i * OnlineFBank;

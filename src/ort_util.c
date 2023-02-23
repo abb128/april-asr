@@ -14,6 +14,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include "common.h"
 #include "ort_util.h"
 
 size_t input_dims(OrtSession* session, size_t idx, int64_t *dimensions, size_t dim_size) {

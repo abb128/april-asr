@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include "common.h"
 #include "onnxruntime_c_api.h"
 #include "file/model_file.h"
 #include "log.h"

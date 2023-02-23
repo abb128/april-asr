@@ -16,6 +16,7 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include "common.h"
 #include "log.h"
 #include "proc_thread.h"
 

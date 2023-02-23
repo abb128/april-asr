@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "common.h"
 #include "log.h"
 #include "audio_provider.h"
 

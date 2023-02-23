@@ -12,23 +12,11 @@
  * 
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
+ */
 
-#ifndef _APRIL_AUDIO_PROVIDER
-#define _APRIL_AUDIO_PROVIDER
+#ifndef _APRIL_COMMON
+#define _APRIL_COMMON
 
-#include "common.h"
-
-struct AudioProvider_i;
-typedef struct AudioProvider_i *AudioProvider;
-
-AudioProvider ap_create();
-
-// Returns true if successful, false if buffer is full
-bool ap_push_audio(AudioProvider ap, const short *audio, size_t short_count);
-
-short *ap_pull_audio(AudioProvider ap,  size_t *short_count);
-void ap_pull_audio_finish(AudioProvider ap, size_t short_count);
-void ap_free(AudioProvider ap);
+#define _APRIL_EXPORT
 
 #endif

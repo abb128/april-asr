@@ -19,6 +19,7 @@
 #include <time.h>
 #include <stdbool.h>
 
+#include "common.h"
 #include "april_api.h"
 #include "fbank.h"
 #include "onnxruntime_c_api.h"

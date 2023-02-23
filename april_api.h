@@ -20,6 +20,17 @@
 #include <stddef.h>
 #include <stdint.h>
 
+
+#ifdef _APRIL_EXPORT
+#if defined(_WIN32) || defined(__WIN32__) || defined(__WINDOWS__)
+#define APRIL_EXPORT __declspec(dllexport)
+#else
+#define APRIL_EXPORT
+#endif
+#else
+#define APRIL_EXPORT
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -31,23 +42,23 @@ typedef struct AprilASRModel_i * AprilASRModel;
 typedef struct AprilASRSession_i * AprilASRSession;
 
 /* Must be called once before calling any other functions */
-void aam_api_init(void);
+APRIL_EXPORT void aam_api_init(void);
 
 /* Creates a model given a path. Returns NULL if loading failed. */
-AprilASRModel aam_create_model(const char *model_path);
+APRIL_EXPORT AprilASRModel aam_create_model(const char *model_path);
 
 /* Get the name/desc/lang of the model. The pointers are valid for the
    lifetime of the model (i.e. until aam_free is called on the model) */
-const char *aam_get_name(AprilASRModel model);
-const char *aam_get_description(AprilASRModel model);
-const char *aam_get_language(AprilASRModel model);
+APRIL_EXPORT const char *aam_get_name(AprilASRModel model);
+APRIL_EXPORT const char *aam_get_description(AprilASRModel model);
+APRIL_EXPORT const char *aam_get_language(AprilASRModel model);
 
 /* Get the sample rate of model in Hz. For example, may return 16000 */
-size_t aam_get_sample_rate(AprilASRModel model);
+APRIL_EXPORT size_t aam_get_sample_rate(AprilASRModel model);
 
 /* Caller must ensure all sessions backed by model are freed before model
    is freed */
-void aam_free(AprilASRModel model);
+APRIL_EXPORT void aam_free(AprilASRModel model);
 
 
 
@@ -137,24 +148,24 @@ typedef struct AprilConfig {
 
 /* Creates a session with a given model. A model may have many sessions
    associated with it. */
-AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config);
+APRIL_EXPORT AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config);
 
 /* Feed PCM16 audio data to the session, must be single-channel and sampled
    to the sample rate given in `aam_get_sample_rate`.
    Note `short_count` is the number of shorts, not bytes! */
-void aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count);
+APRIL_EXPORT void aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count);
 
 /* Processes any unprocessed samples and produces a final result. */
-void aas_flush(AprilASRSession session);
+APRIL_EXPORT void aas_flush(AprilASRSession session);
 
 /* If APRIL_CONFIG_FLAG_REALTIME_BIT is set, this may return a number >= 1.0
    denoting the amount of input audio speedup. If not set, this will always
    return 1.0 */
-float aas_realtime_get_speedup(AprilASRSession session);
+APRIL_EXPORT float aas_realtime_get_speedup(AprilASRSession session);
 
 /* Frees the session, this must be called for all sessions before freeing
    the model. Saves state to a file if AprilSpeakerID was supplied. */
-void aas_free(AprilASRSession session);
+APRIL_EXPORT void aas_free(AprilASRSession session);
 
 #ifdef __cplusplus
 }

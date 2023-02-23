@@ -17,6 +17,8 @@
 #ifndef _APRIL_PROC_THREAD
 #define _APRIL_PROC_THREAD
 
+#include "common.h"
+
 #define PT_FLAG_KILL 1
 #define PT_FLAG_AUDIO 2
 #define PT_FLAG_FLUSH 4

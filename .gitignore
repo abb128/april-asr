@@ -5,3 +5,8 @@ lib
 **/__pycache__
 *.so
 *.egg-info
+*.lib
+*.pdb
+*.dll
+*.exp
+*.exe

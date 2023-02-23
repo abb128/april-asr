@@ -18,6 +18,7 @@
 #define _APRIL_LOG
 
 #include <stdio.h>
+#include "common.h"
 
 typedef enum LogLevel {
     LEVEL_DEBUG = 0,

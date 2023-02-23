@@ -17,6 +17,7 @@
 #ifndef _APRIL_SESSION
 #define _APRIL_SESSION
 
+#include "common.h"
 #include <stdbool.h>
 #include "ort_util.h"
 #include "april_model.h"

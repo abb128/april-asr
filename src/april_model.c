@@ -14,6 +14,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include "common.h"
 #include "file/model_file.h"
 #include "april_model.h"
 #include "log.h"

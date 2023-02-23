@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include "common.h"
 #include "params.h"
 #include "file/util.h"
 #include "log.h"

@@ -21,6 +21,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include "common.h"
 
 typedef struct ModelParameters {
     int batch_size;

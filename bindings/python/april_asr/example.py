@@ -11,16 +11,7 @@ def example_handler(is_final, tokens):
     else:
         print("-"+s)
 
-def main():
-    # Parse arguments
-    args = sys.argv
-    if len(args) != 3:
-        print("Usage: " + args[0] + " /path/to/model.april /path/to/file.wav")
-        return
-    
-    model_path = args[1]
-    wav_file_path = args[2]
-
+def run(model_path, wav_file_path):
     # Load the model
     model = april.Model(model_path)
 
@@ -34,11 +25,20 @@ def main():
 
     # Feed the audio data
     with open(wav_file_path, "rb") as f:
-        session.feed_pcm16(f.read())
+        data = f.read()
+    
+    session.feed_pcm16(data)
 
     # Flush to finish off
     session.flush()
 
+def main():
+    # Parse arguments
+    args = sys.argv
+    if len(args) != 3:
+        print("Usage: " + args[0] + " /path/to/model.april /path/to/file.wav")
+    else:    
+        run(args[1], args[2])
 
 if __name__ == "__main__":
     main()

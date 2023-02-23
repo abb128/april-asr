@@ -17,6 +17,7 @@
 #ifndef _APRIL_MODEL
 #define _APRIL_MODEL
 
+#include "common.h"
 #include "ort_util.h"
 #include "april_api.h"
 #include "params.h"
