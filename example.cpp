@@ -96,7 +96,7 @@ int main(int argc, char *argv[]){
     
     // In the start of our program we should call aam_api_init.
     // This should only be called once.
-    aam_api_init();
+    aam_api_init(APRIL_VERSION);
 
     // Next we should load the model. The model by itself doesn't allow us
     // to do much except for get the metadata. If loading the model

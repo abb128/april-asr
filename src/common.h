@@ -18,5 +18,6 @@
 #define _APRIL_COMMON
 
 #define _APRIL_EXPORT
+extern int g_client_version;
 
 #endif

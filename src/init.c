@@ -26,10 +26,13 @@
 #include "ort_util.h"
 #include "log.h"
 
+int g_client_version = 0;
 const OrtApi* g_ort = NULL;
 LogLevel g_loglevel = LEVEL_WARNING;
 
-void aam_api_init(void){
+void aam_api_init(int version){
+    g_client_version = version;
+
     char *log_env = getenv("APRIL_LOG_LEVEL");
     if(log_env){
         for(int i=0; i<=LEVEL_COUNT; i++){

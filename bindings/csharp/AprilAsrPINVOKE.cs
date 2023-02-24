@@ -34,7 +34,7 @@ namespace AprilAsr.PINVOKE {
     class AprilAsrPINVOKE
     {
         [DllImport("aprilasr", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void aam_api_init();
+        public static extern void aam_api_init(int version);
 
         [DllImport("aprilasr", CallingConvention = CallingConvention.Cdecl)]
         public static extern IntPtr aam_create_model(string path);
@@ -71,7 +71,7 @@ namespace AprilAsr.PINVOKE {
 
         static AprilAsrPINVOKE()
         {
-            aam_api_init();
+            aam_api_init(1);
         }
     }
 }

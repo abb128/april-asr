@@ -41,8 +41,11 @@ struct AprilASRSession_i;
 typedef struct AprilASRModel_i * AprilASRModel;
 typedef struct AprilASRSession_i * AprilASRSession;
 
+#define APRIL_VERSION 1
+
 /* Must be called once before calling any other functions */
-APRIL_EXPORT void aam_api_init(void);
+/* Version must be set to APRIL_VERSION like so: aam_api_init(APRIL_VERSION) */
+APRIL_EXPORT void aam_api_init(int version);
 
 /* Creates a model given a path. Returns NULL if loading failed. */
 APRIL_EXPORT AprilASRModel aam_create_model(const char *model_path);

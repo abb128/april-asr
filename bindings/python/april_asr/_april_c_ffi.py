@@ -85,7 +85,7 @@ class AprilFFI:
         
         _init_library_functions(self.lib)
 
-        self.lib.aam_api_init()
+        self.lib.aam_api_init(1)
 
         self.aam_get_sample_rate       = self.lib.aam_get_sample_rate
         self.aam_free                  = self.lib.aam_free
