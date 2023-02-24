@@ -4,15 +4,17 @@ import sys
 
 # Creates a handler function that prints with a numbered prefix
 def indexed_handler(i):
-    def handler(is_final, tokens):
+    def handler(result_type, tokens):
         s = ""
         for token in tokens:
             s = s + token.token
         
-        if is_final:
+        if result_type == april.Result.FinalRecognition:
             print(f'{i}: @{s}')
-        else:
+        if result_type == april.Result.PartialRecognition:
             print(f'{i}: -{s}')
+        else:
+            print(f'{i}: .')
     
     return handler
 

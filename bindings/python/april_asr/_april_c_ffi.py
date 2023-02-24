@@ -1,7 +1,6 @@
 import ctypes
 import sys
 import os
-from enum import Enum
 
 class AprilASRModel_i(ctypes.Structure):
     pass
@@ -19,13 +18,6 @@ class AprilToken(ctypes.Structure):
     _fields_ = [("token", ctypes.c_char_p),
                 ("logprob", ctypes.c_float),
                 ("flags", AprilTokenFlagBits)]
-
-class AprilResultType(Enum):
-    APRIL_RESULT_UNKNOWN = 0,
-    APRIL_RESULT_RECOGNITION_PARTIAL = 1,
-    APRIL_RESULT_RECOGNITION_FINAL = 2,
-    APRIL_RESULT_ERROR_CANT_KEEP_UP = 3,
-    APRIL_RESULT_SILENCE = 4
 
 AprilRecognitionResultHandler = ctypes.CFUNCTYPE(None, ctypes.c_void_p, ctypes.c_int, ctypes.c_size_t, ctypes.POINTER(AprilToken))
 

@@ -1,15 +1,17 @@
 import april_asr as april
 import sys
 
-def example_handler(is_final, tokens):
+def example_handler(result_type, tokens):
     s = ""
     for token in tokens:
         s = s + token.token
     
-    if is_final:
+    if result_type == april.Result.FinalRecognition:
         print("@"+s)
-    else:
+    elif result_type == april.Result.PartialRecognition:
         print("-"+s)
+    else:
+        print("")
 
 def run(model_path, wav_file_path):
     # Load the model

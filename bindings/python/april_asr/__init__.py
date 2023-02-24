@@ -1,3 +1,3 @@
-__all__ = ["AprilToken", "Model", "Session"]
+__all__ = ["Token", "Result", "Model", "Session"]
 
-from ._april import AprilToken, Model, Session
+from ._april import Token, Result, Model, Session

@@ -1,7 +1,8 @@
 import ctypes
+from enum import IntEnum
 from . import _april_c_ffi as _c
 
-class AprilToken:
+class Token:
     def __init__(self, token):
         self.token = token.token.decode("utf-8")
         self.logprob = token.logprob
@@ -34,18 +35,11 @@ class Model:
 def _handle_result(userdata, result_type, num_tokens, tokens):
     self = ctypes.cast(userdata, ctypes.py_object).value
     
-    if result_type == 1:
-        self.result_final = False
-    elif result_type == 2:
-        self.result_final = True
-    else:
-        return
-    
-    self.tokens = []
+    a_tokens = []
     for i in range(num_tokens):
-        self.tokens.append(AprilToken(tokens[i]))
+        a_tokens.append(Token(tokens[i]))
     
-    self.callback(self.result_final, self.tokens)
+    self.callback(result_type, a_tokens)
 
 _HANDLER = _c.AprilRecognitionResultHandler(_handle_result)
 
@@ -62,9 +56,6 @@ class Session:
         if self._handle == None:
             raise Exception()
 
-        self.result_final = False
-        self.tokens = []
-
         self.callback = callback
 
     def feed_pcm16(self, data):
@@ -77,3 +68,11 @@ class Session:
         _c.ffi.aas_free(self._handle)
         self.model = None
         self._handle = None
+
+
+class Result(IntEnum):
+    Unknown = 0,
+    PartialRecognition = 1,
+    FinalRecognition = 2,
+    ErrorCantKeepUp = 3,
+    Silence = 4
