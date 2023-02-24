@@ -84,3 +84,5 @@ Currently I'm developing [Live Captions](https://github.com/abb128/LiveCaptions)
 
 ## Acknowledgements
 Thanks to the [k2-fsa/icefall](https://github.com/k2-fsa/icefall) contributors for creating the speech recognition recipes and models.
+
+The bindings are based on the [Vosk API bindings](https://github.com/alphacep/vosk-api), which is another speech recognition library based on previous-generation Kaldi. Vosk is Copyright 2019 Alpha Cephei Inc. and licensed under the Apache 2.0 license.

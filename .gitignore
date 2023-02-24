@@ -1,7 +1,8 @@
 .cache
 .vs
-build*
-lib
+/build
+/build2
+/lib
 **/__pycache__
 *.so
 *.egg-info
@@ -10,3 +11,4 @@ lib
 *.dll
 *.exp
 *.exe
+*.nupkg

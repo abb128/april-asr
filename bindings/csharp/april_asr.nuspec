@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package>
+  <metadata>
+    <id>april_asr</id>
+    <version>0.0.1</version>
+    <authors>abb128</authors>
+    <title>April Speech Recognition</title>
+    <description>Offline speech recognition</description>
+    <dependencies>
+      <group targetFramework=".NETStandard2.0"/>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="**" exclude="src/*.cs;build.sh;**/.keep-me;*.nupkg" />
+  </files>
+</package>
