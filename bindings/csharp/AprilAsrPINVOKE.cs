@@ -1,6 +1,7 @@
+using AprilAsr;
 using System.Runtime.InteropServices;
 
-namespace AprilAsrPINVOKE {
+namespace AprilAsr.PINVOKE {
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
     public struct AprilSpeakerID
     {
@@ -8,18 +9,6 @@ namespace AprilAsrPINVOKE {
         public byte[] data;
     }
 
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-    public struct AprilToken
-    {
-        public IntPtr token;
-        public float logprob;
-        public int flags;
-
-        public string GetToken()
-        {
-            return Marshal.PtrToStringUTF8(this.token) ?? "";
-        }
-    }
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void AprilRecognitionResultHandler(
@@ -79,5 +68,10 @@ namespace AprilAsrPINVOKE {
 
         [DllImport("aprilasr", CallingConvention=CallingConvention.Cdecl)]
         public static extern void aas_free(IntPtr session);
+
+        static AprilAsrPINVOKE()
+        {
+            aam_api_init();
+        }
     }
 }
