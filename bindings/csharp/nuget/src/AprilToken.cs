@@ -1,3 +1,4 @@
+using AprilAsr.PINVOKE;
 using System;
 using System.Runtime.InteropServices;
 
@@ -12,7 +13,7 @@ namespace AprilAsr
 
         public string Token
         {
-            get { return Marshal.PtrToStringUTF8(_token) ?? ""; }
+            get { return AprilAsrPINVOKE.PtrToStringUTF8(_token) ?? ""; }
         }
     }
 }

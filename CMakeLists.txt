@@ -5,6 +5,11 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(aprilasr)
 
+if(WIN32)
+    set(CMAKE_SHARED_LIBRARY_PREFIX "lib")
+    set(CMAKE_STATIC_LIBRARY_PREFIX "lib")
+endif()
+
 cmake_policy(SET CMP0074 NEW)
 if (DEFINED ENV{ONNX_ROOT})
   set(ONNXRuntime_ROOT_DIR $ENV{ONNX_ROOT})

@@ -12,3 +12,5 @@
 *.exp
 *.exe
 *.nupkg
+bindings/csharp/AprilAsrDemo/bin
+bindings/csharp/AprilAsrDemo/obj

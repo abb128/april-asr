@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
   <metadata>
-    <id>april_asr</id>
-    <version>0.0.1</version>
+    <id>AprilAsr</id>
+    <version>0.0.1.2</version>
     <authors>abb128</authors>
     <title>April Speech Recognition</title>
     <description>Offline speech recognition</description>

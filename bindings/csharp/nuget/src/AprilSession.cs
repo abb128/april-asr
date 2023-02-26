@@ -5,7 +5,7 @@ namespace AprilAsr
 {
     public delegate void SessionCallback(int Kind, AprilToken[] Tokens);
 
-    internal class AprilSession
+    public class AprilSession
     {
         IntPtr handle;
         AprilModel model;

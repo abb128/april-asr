@@ -4,7 +4,7 @@ using AprilAsr.PINVOKE;
 
 namespace AprilAsr
 {
-    internal class AprilModel
+    public class AprilModel
     {
         internal IntPtr handle;
         public AprilModel(string modelPath)
@@ -23,16 +23,16 @@ namespace AprilAsr
 
         public string Name
         {
-            get { return Marshal.PtrToStringUTF8(AprilAsrPINVOKE.aam_get_name(handle)) ?? ""; }
+            get { return AprilAsrPINVOKE.PtrToStringUTF8(AprilAsrPINVOKE.aam_get_name(handle)) ?? ""; }
         }
         public string Description
         {
-            get { return Marshal.PtrToStringUTF8(AprilAsrPINVOKE.aam_get_description(handle)) ?? ""; }
+            get { return AprilAsrPINVOKE.PtrToStringUTF8(AprilAsrPINVOKE.aam_get_description(handle)) ?? ""; }
         }
         
         public string Language
         {
-            get { return Marshal.PtrToStringUTF8(AprilAsrPINVOKE.aam_get_language(handle)) ?? ""; }
+            get { return AprilAsrPINVOKE.PtrToStringUTF8(AprilAsrPINVOKE.aam_get_language(handle)) ?? ""; }
         }
 
         public int SampleRate
