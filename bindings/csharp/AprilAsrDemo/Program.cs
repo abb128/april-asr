@@ -10,10 +10,18 @@ internal class Program {
         Console.WriteLine("Language: " + model.Language);
 
         // Create the session with an inline callback
-        var session = new AprilSession(model, (kind, tokens) => {
+        var session = new AprilSession(model, (result, tokens) => {
             if (tokens == null) return;
 
             string s = "";
+            if(result == AprilResultKind.PartialRecognition) {
+                s = "- ";
+            }else if(result == AprilResultKind.FinalRecognition) {
+                s = "@ ";
+            }else{
+                s = " ";
+            }
+
             foreach(AprilToken token in tokens) {
                 s += token.Token;
             }

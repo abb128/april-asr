@@ -3,7 +3,15 @@ using AprilAsr.PINVOKE;
 
 namespace AprilAsr
 {
-    public delegate void SessionCallback(int Kind, AprilToken[] Tokens);
+    public enum AprilResultKind : int {
+        Unknown = 0,
+        PartialRecognition = 1,
+        FinalRecognition = 2,
+        ErrorCantKeepUp = 3,
+        Silence = 4
+    }
+
+    public delegate void SessionCallback(AprilResultKind Kind, AprilToken[] Tokens);
 
     public class AprilSession
     {
@@ -18,7 +26,7 @@ namespace AprilAsr
             AprilToken[] tokens
         )
         {
-            this.callback(resultType, tokens);
+            this.callback((AprilResultKind)resultType, tokens);
         }
 
         public AprilSession(AprilModel model, SessionCallback callback, bool async = false) {
