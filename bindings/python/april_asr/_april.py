@@ -1,4 +1,5 @@
 import ctypes
+import struct
 from enum import IntEnum
 from . import _april_c_ffi as _c
 
@@ -44,10 +45,18 @@ def _handle_result(userdata, result_type, num_tokens, tokens):
 _HANDLER = _c.AprilRecognitionResultHandler(_handle_result)
 
 class Session:
-    def __init__(self, model, callback, asynchronous=False):
+    def __init__(self, model, callback, asynchronous=False, no_rt=False, speaker_name=""):
         config = _c.AprilConfig()
         config.flags = _c.AprilConfigFlagBits()
-        config.flags.value = 1 if not asynchronous else 0 # TODO: Maybe synchronous mode should be default in april api
+
+        if asynchronous and no_rt: config.flags.value = 2
+        elif asynchronous: config.flags.value = 1
+        else: config.flags.value = 0
+
+        if speaker_name != "":
+            spkr_data = struct.pack("@q", hash(speaker_name)) * 2
+            config.speaker = _c.AprilSpeakerID.from_buffer_copy(spkr_data)
+
         config.handler = _HANDLER
         config.userdata = id(self)
 
@@ -57,6 +66,9 @@ class Session:
             raise Exception()
 
         self.callback = callback
+
+    def get_rt_speedup(self):
+        return _c.ffi.aas_realtime_get_speedup(self._handle)
 
     def feed_pcm16(self, data):
         _c.ffi.aas_feed_pcm16(self._handle, data)

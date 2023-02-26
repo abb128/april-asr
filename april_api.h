@@ -122,19 +122,22 @@ typedef void(*AprilRecognitionResultHandler)(void*, AprilResultType, size_t, con
 
 
 typedef enum AprilConfigFlagBits {
-    /* If set, calls to `aas_feed_pcm16` and `aas_flush` will be very slow
-       as it will perform expensive calculations. If not set, then the
-       calculations will be done in a different thread, these calls will be
-       fast, and the handler gets called from another thread whenever
-       processing is finished. */
-    APRIL_CONFIG_FLAG_SYNCHRONOUS_BIT = 0x00000001,
+    APRIL_CONFIG_FLAG_ZERO_BIT = 0x00000000,
 
-    /* If set, then the session will attempt to keep processing real-time.
-       If the system is not fast enough (e.g. takes longer than 1 second to
-       process 1 second of audio), then the input audio will be sped up such
-       that it keeps up. This may reduce accuracy. Use aas_realtime_get_speedup
-       to figure out the decrease in accuracy. */
-    APRIL_CONFIG_FLAG_REALTIME_BIT    = 0x00000002,
+    /* If set, the input audio should be fed in realtime (1 second of
+       audio per second) in small chunks. Calls to `aas_feed_pcm16` and
+       `aas_flush` will be fast as it will delegate processing to a background
+       thread. The handler will be called from the background thread at some
+       point later. The accuracy may be degraded depending on the system
+       hardware. You may get an accuracy estimate by calling
+       `aas_realtime_get_speedup`. */
+    APRIL_CONFIG_FLAG_ASYNC_RT_BIT = 0x00000001,
+
+    /* Similar to ASYNC_RT, but does not degrade accuracy depending on system
+       hardware. However, if the system is not fast enough to process audio,
+       the background thread will fall behind, results may become unusable,
+       and the handler will be called with APRIL_RESULT_ERROR_CANT_KEEP_UP. */
+    APRIL_CONFIG_FLAG_ASYNC_NO_RT_BIT = 0x00000002,
 } AprilConfigFlagBits;
 
 typedef struct AprilConfig {
@@ -161,9 +164,10 @@ APRIL_EXPORT void aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t s
 /* Processes any unprocessed samples and produces a final result. */
 APRIL_EXPORT void aas_flush(AprilASRSession session);
 
-/* If APRIL_CONFIG_FLAG_REALTIME_BIT is set, this may return a number >= 1.0
-   denoting the amount of input audio speedup. If not set, this will always
-   return 1.0 */
+/* If APRIL_CONFIG_FLAG_ASYNC_RT_BIT is set, this may return a number describing
+   how much audio is being sped up to keep up with realtime. If the number is
+   below 1.0, audio is not being sped up. If greater than 1.0, the audio is
+   being sped up and the accuracy may be reduced. */
 APRIL_EXPORT float aas_realtime_get_speedup(AprilASRSession session);
 
 /* Frees the session, this must be called for all sessions before freeing

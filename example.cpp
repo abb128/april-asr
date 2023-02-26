@@ -48,9 +48,6 @@ struct {
 
 // This callback function will get called every time a new result is decoded.
 // It's passed into the AprilConfig along with the userdata pointer.
-// Note that this function may be called from a different thread, unless
-// APRIL_CONFIG_FLAG_SYNCHRONOUS_BIT is set in the config, in which case calls
-// to aas_feed_pcm16 will block. In this example we want it to block.
 void handler(void *userdata, AprilResultType result, size_t count, const AprilToken *tokens) {
     assert(userdata == &some_internal_state);
 
@@ -63,14 +60,6 @@ void handler(void *userdata, AprilResultType result, size_t count, const AprilTo
             break;
         case APRIL_RESULT_SILENCE:
             break;
-        case APRIL_RESULT_ERROR_CANT_KEEP_UP:
-            // Here, this is never called since APRIL_CONFIG_FLAG_SYNCHRONOUS_BIT
-            // is specified, but it is included here for demonstration
-            assert(tokens == NULL);
-            assert(count == 0);
-
-            printf("Can't keep up!");
-            return;
         default:
             assert(false);
             return;
@@ -125,10 +114,10 @@ int main(int argc, char *argv[]){
     config.handler = handler;
     config.userdata = (void*)&some_internal_state;
 
-    // In this example we just want to perform recognition on an audio
-    // file synchronously and exit once complete. In a real application
-    // you may want to use asynchronous recognition instead
-    config.flags = APRIL_CONFIG_FLAG_SYNCHRONOUS_BIT;
+    // By default, the session runs in synchronous mode. If you want async
+    // processing, you may choose to set it to APRIL_CONFIG_FLAG_ASYNC_RT_BIT
+    // here.
+    config.flags = APRIL_CONFIG_FLAG_ZERO_BIT;
 
     AprilASRSession session = aas_create_session(model, config);
 

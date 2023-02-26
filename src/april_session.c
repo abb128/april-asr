@@ -25,8 +25,8 @@ void run_aas_callback(void *userdata, int flags);
 AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config) {
     AprilASRSession aas = (AprilASRSession)calloc(1, sizeof(struct AprilASRSession_i));
 
-    aas->sync = (config.flags & APRIL_CONFIG_FLAG_SYNCHRONOUS_BIT) != 0;
-    aas->force_realtime = (config.flags & APRIL_CONFIG_FLAG_REALTIME_BIT) != 0;
+    aas->sync = ((config.flags & APRIL_CONFIG_FLAG_ASYNC_RT_BIT) | (config.flags & APRIL_CONFIG_FLAG_ASYNC_NO_RT_BIT)) == 0;
+    aas->force_realtime = (config.flags & APRIL_CONFIG_FLAG_ASYNC_RT_BIT) != 0;
 
     FBankOptions fbank_opts = model->fbank_opts;
     fbank_opts.use_sonic = aas->force_realtime;
