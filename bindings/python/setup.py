@@ -13,7 +13,8 @@ machine = os.environ.get('APRIL_MACHINE', platform.machine())
 # Copy precompiled libraries
 PRECOMP_LIBS = [
     "libaprilasr.so",
-    "Release/aprilasr.dll",
+    "Release/libaprilasr.dll",
+    "../lib/lib/libonnxruntime.so",
     "../lib/lib/onnxruntime.dll"
 ]
 
