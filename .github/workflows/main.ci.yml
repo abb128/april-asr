@@ -1,0 +1,46 @@
+name: AprilASR CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build library
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      
+      - name: Install apt packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: build-essential cmake wget tar
+      
+      - name: Download ONNX Runtime
+        run: cd ${{ github.workspace }} && ./download_onnx_linux_x64.sh
+      
+      - name: Configure AprilASR
+        run: cd ${{ github.workspace }} && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release ..
+        
+      - name: Build AprilASR
+        run: cd ${{ github.workspace }}/build && make -j4
+
+      - name: Upload libaprilasr.so build artifact
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: libaprilasr.so
+          path: ${{ github.workspace }}/build/libaprilasr.so
+
+      - name: Upload libonnxruntime.so build artifact
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: libonnxruntime.so
+          path: ${{ github.workspace }}/lib/libonnxruntime.so
+
