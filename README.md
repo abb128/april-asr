@@ -8,7 +8,7 @@ This library is currently under development. Some features are unimplemented, it
 Furthermore, there's only one model that only does English and has some accuracy issues at that.
 
 ### Language support
-Currently only a C API is available, language bindings for other languages have not yet been developed.
+The library has a C API, and there are C# and Python bindings available, but these have not yet been published to PyPi or nuget.
 
 ## Example
 An example use of this library is provided in `example.cpp`. It can perform speech recognition on a wave file, or do streaming recognition by reading stdin.
