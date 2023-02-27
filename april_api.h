@@ -25,10 +25,20 @@
 #if defined(_WIN32) || defined(__WIN32__) || defined(__WINDOWS__)
 #define APRIL_EXPORT __declspec(dllexport)
 #else
+#define APRIL_EXPORT __attribute__((visibility("default")))
+#endif
+#else
+
+#if defined(_WIN32) || defined(__WIN32__) || defined(__WINDOWS__)
+#ifdef APRIL_DLL_IMPORT
+#define APRIL_EXPORT __declspec(dllimport)
+#else
 #define APRIL_EXPORT
 #endif
 #else
 #define APRIL_EXPORT
+#endif
+
 #endif
 
 #ifdef __cplusplus
