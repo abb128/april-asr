@@ -11,36 +11,76 @@ on:
 jobs:
   build:
     name: Build library
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           submodules: recursive
       
-      - name: Install apt packages
+      - if: matrix.os == 'ubuntu-latest'
+        name: Install apt packages
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: build-essential cmake wget tar
-      
-      - name: Download ONNX Runtime
-        run: cd ${{ github.workspace }} && ./download_onnx_linux_x64.sh
-      
-      - name: Configure AprilASR
-        run: cd ${{ github.workspace }} && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release ..
-        
-      - name: Build AprilASR
-        run: cd ${{ github.workspace }}/build && make -j4
 
-      - name: Upload libaprilasr.so build artifact
+      - if: matrix.os == 'ubuntu-latest'
+        name: Download ONNXRuntime (Linux)
+        shell: bash
+        working-directory: ${{github.workspace}}
+        run: ./download_onnx_linux_x64.sh
+      
+      - if: matrix.os == 'windows-latest'
+        name: Download ONNXRuntime (Windows)
+        shell: bash
+        working-directory: ${{github.workspace}}
+        run: ./download_onnx_windows_x64.sh
+
+      - name: Create Build Environment
+        run: cmake -E make_directory ${{github.workspace}}/build
+
+      - name: Configure CMake
+        shell: bash
+        working-directory: ${{github.workspace}}/build
+        run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+
+      - name: Build libaprilasr
+        working-directory: ${{github.workspace}}/build
+        shell: bash
+        run: cmake --build . --config RELEASE
+
+      - if: matrix.os == 'windows-latest'
+        name: Upload libaprilasr.dll
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: libaprilasr.dll
+          path: ${{github.workspace}}/build/Release/libaprilasr.dll
+      
+      - if: matrix.os == 'windows-latest'
+        name: Upload onnxruntime.dll
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: onnxruntime.dll
+          path: ${{github.workspace}}/lib/lib/onnxruntime.dll
+      
+      - if: matrix.os == 'ubuntu-latest'
+        name: Upload libaprilasr.so
         uses: actions/upload-artifact@v3.1.0
         with:
           name: libaprilasr.so
-          path: ${{ github.workspace }}/build/libaprilasr.so
+          path: ${{github.workspace}}/build/libaprilasr.so
 
-      - name: Upload libonnxruntime.so build artifact
+      - if: matrix.os == 'ubuntu-latest'
+        name: Upload libonnxruntime.so
         uses: actions/upload-artifact@v3.1.0
         with:
           name: libonnxruntime.so
-          path: ${{ github.workspace }}/lib/libonnxruntime.so
+          path: ${{github.workspace}}/lib/lib/libonnxruntime.so
 
