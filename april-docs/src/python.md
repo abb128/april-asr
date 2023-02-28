@@ -33,10 +33,10 @@ sample_rate: int = model.get_sample_rate()
 
 ## Session
 
-Before creating a session, define a handler function, or use a lambda. Here is an example handler that concatenates the tokens to a string and prints it:
+Before creating a session, define a handler callback. Here is an example handler function that concatenates the tokens to a string and prints it:
 
 ```py
-def handler(result_type: april.Result, tokens: april.Token):
+def handler(result_type, tokens):
     s = ""
     for token in tokens:
         s = s + token.token
@@ -77,7 +77,7 @@ session.feed_pcm16(data)
 
 This works only if the wav file is PCM16 and sampled in the correct sample rate. When you attempt to load an mp3, non-PCM16/non-16kHz wav file, or any other audio file in this way, you will likely get gibberish or no results.
 
-To load more arbitrary audio files, you can use a Python library that handles audio loading:
+To load more arbitrary audio files, you can use a Python library that handles audio loading (make sure librosa is installed: `pip install librosa`):
 
 ```py
 import librosa
