@@ -107,7 +107,12 @@ set(april_sources
   src/sonic/sonic.c
 )
 
-CHECK_INCLUDE_FILE(threads.h HAVE_C11_THREADS)
+if(DEFINED USE_TINYCTHREAD)
+    set(HAVE_C11_THREADS FALSE)
+else()
+    CHECK_INCLUDE_FILE(threads.h HAVE_C11_THREADS)
+endif()
+
 if((NOT HAVE_C11_THREADS) OR (DEFINED USE_TINYCTHREAD))
     set(april_sources ${april_sources}
       src/tinycthread/tinycthread.c)
