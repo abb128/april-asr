@@ -14,3 +14,5 @@
 *.nupkg
 bindings/csharp/AprilAsrDemo/bin
 bindings/csharp/AprilAsrDemo/obj
+bindings/python/build
+bindings/python/dist

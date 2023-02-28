@@ -56,6 +56,11 @@ jobs:
         shell: bash
         run: cmake --build . --config RELEASE
 
+      - name: Build Python whl
+        working-directory: ${{github.workspace}}/bindings/python
+        shell: bash
+        run: python3 setup.py bdist_wheel
+
       - if: matrix.os == 'windows-latest'
         name: Upload libaprilasr.dll
         uses: actions/upload-artifact@v3.1.0
@@ -69,6 +74,13 @@ jobs:
         with:
           name: onnxruntime.dll
           path: ${{github.workspace}}/lib/lib/onnxruntime.dll
+      
+      - if: matrix.os == 'windows-latest'
+        name: Upload Python wheel
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: windows-python-dist
+          path: ${{github.workspace}}/bindings/python/dist
       
       - if: matrix.os == 'ubuntu-latest'
         name: Upload libaprilasr.so
@@ -84,3 +96,10 @@ jobs:
           name: libonnxruntime.so
           path: ${{github.workspace}}/lib/lib/libonnxruntime.so
 
+      - if: matrix.os == 'ubuntu-latest'
+        name: Upload Python wheel
+        uses: actions/upload-artifact@v3.1.0
+        with:
+          name: ubuntu-python-dist
+          path: ${{github.workspace}}/bindings/python/dist
+      
