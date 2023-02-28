@@ -106,9 +106,11 @@ A token may be a single letter, a word chunk, an entire word, punctuation, or ot
 
 To convert a token array to a string, simply concatenate the strings from each token. You don't need to add spaces between tokens, the tokens contain their own formatting.
 
+![Token example list](tokens.png)
+
 For example, the text `"THAT'S COOL ELEPHANTS"` may be represented as tokens like so:
 * `[" THAT", "'", "S", " CO", "OL", " E", "LE", "P", "H", "ANT", "S"]`
-* Concatenating these strings will give you the correct `" THAT'S COOL ELEPHANTS"`, but with an extra space at the beginning. You may want to strip the final string to avoid the extra space.
+* Simply concatenating these strings will give you the correct `" THAT'S COOL ELEPHANTS"`, but with an extra space at the beginning. You may want to strip the final string to avoid the extra space.
 
 Tokens contain more data than just the string however. They also contain the log probability, and a boolean denoting whether or not it's a word boundary. In English, the word boundary value is equivalent to checking if the first character is a space.
 
