@@ -108,7 +108,7 @@ set(april_sources
 )
 
 CHECK_INCLUDE_FILE(threads.h HAVE_C11_THREADS)
-if(NOT HAVE_C11_THREADS)
+if((NOT HAVE_C11_THREADS) OR (DEFINED USE_TINYCTHREAD))
     set(april_sources ${april_sources}
       src/tinycthread/tinycthread.c)
     
