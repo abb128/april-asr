@@ -113,6 +113,11 @@ if((NOT HAVE_C11_THREADS) OR (DEFINED USE_TINYCTHREAD))
       src/tinycthread/tinycthread.c)
     
     add_compile_definitions(USE_TINYCTHREAD)
+
+
+    if(NOT WIN32)
+      list(APPEND onnx_link_libraries "pthread")
+    endif()
 endif()
 
 include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src ${ORT_INCLUDE_DIR})
