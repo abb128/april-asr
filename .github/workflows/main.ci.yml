@@ -59,7 +59,7 @@ jobs:
       - name: Ensure wheel and auditwheel are installed
         run: |
           python3 -m pip install --upgrade pip
-          python3 -m pip install wheel auditwheel
+          python3 -m pip install --upgrade wheel auditwheel patchelf
       
       - name: Build Python whl
         working-directory: ${{github.workspace}}/bindings/python
