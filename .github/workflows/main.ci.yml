@@ -119,6 +119,7 @@ jobs:
           path: ${{github.workspace}}/bindings/python/wheelhouse
   nupkg:
     name: Build nupkg
+    needs: build
     runs-on: ubuntu-latest
 
 
@@ -128,6 +129,11 @@ jobs:
         with:
           submodules: recursive
       
+      - name: Install apt packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: mono-mcs nuget
+
       - name: Download Linux aprilasr
         uses: actions/download-artifact@master
         with:
