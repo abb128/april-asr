@@ -59,7 +59,11 @@ jobs:
       - name: Ensure wheel and auditwheel are installed
         run: |
           python3 -m pip install --upgrade pip
-          python3 -m pip install --upgrade wheel auditwheel patchelf
+          python3 -m pip install wheel auditwheel
+      
+      - if: matrix.os == 'ubuntu-20.04'
+        name: Update patchelf on Linux
+        run: python3 -m pip install --upgrade patchelf
       
       - name: Build Python whl
         working-directory: ${{github.workspace}}/bindings/python
@@ -87,7 +91,7 @@ jobs:
           path: ${{github.workspace}}/lib/lib/onnxruntime.dll
       
       - if: matrix.os == 'windows-latest'
-        name: Upload Python wheel
+        name: Upload Python wheel (Windows)
         uses: actions/upload-artifact@v3.1.0
         with:
           name: windows-python-dist
@@ -108,7 +112,7 @@ jobs:
           path: ${{github.workspace}}/lib/lib/libonnxruntime.so
 
       - if: matrix.os == 'ubuntu-20.04'
-        name: Upload Python wheel
+        name: Upload Python wheel (Linux)
         uses: actions/upload-artifact@v3.1.0
         with:
           name: ubuntu-python-dist
