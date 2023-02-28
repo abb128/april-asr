@@ -82,7 +82,10 @@ To load more arbitrary audio files, you can use a Python library that handles au
 ```py
 import librosa
 
+# Load the audio samples as numpy floats
 data, sr = librosa.load("/path/to/anything.mp3", sr=model.get_sample_rate(), mono=True)
+
+# Convert the floats to PCM16 bytes
 data = (data * 32767).astype("short").astype("<u2").tobytes()
 
 session.feed_pcm16(data)
@@ -92,6 +95,34 @@ session.feed_pcm16(data)
 You can flush the session once the end of the file has been reached to force a final result:
 ```py
 session.flush()
+```
+
+## Asynchronous
+
+Asynchronous sessions are a little more complicated. You can create one by setting the asynchronous flag to true:
+
+```py
+session = april.Session(model, handler, asynchronous=True)
+```
+
+Now, when feeding audio, be sure to feed it in realtime.
+
+```py
+import librosa
+import time
+
+data, sr = librosa.load("/path/to/anything.mp3", sr=model.get_sample_rate(), mono=True)
+data = (data * 32767).astype("short").astype("<u2").tobytes()
+
+while len(data) > 0:
+    chunk = data[:2400]
+    data = data[2400:]
+    
+    session.feed_pcm16(chunk)
+    if session.get_rt_speedup() > 1.5:
+        print("Warning: System can't keep up, realtime speedup value of " + str(session.get_rt_speedup()))
+
+    time.sleep(2400 / model.get_sample_rate())
 ```
 
 

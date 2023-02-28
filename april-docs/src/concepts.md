@@ -74,17 +74,19 @@ Asynchronous sessions are intended for streaming audio as it comes in, for live 
 
 In an asynchronous session, there is a problem that the system may not be fast enough to process audio at the rate that it's coming in. This is where realtime and non-realtime sessions differ in behavior.
 
-A realtime session will work around this by speeding up incoming audio to a rate where the system can keep up. This involves some audio processing code, which may or may not be desirable.
+![Realtime session diagram](./realtime.png)
 
-Speeding up audio too much will also typically reduce accuracy. There is a method you can call to get the current speedup value so you can tell when it happens. (`GetRTSpeedup`, `get_rt_speedup`, `aas_realtime_get_speedup`)
+A realtime session will work around this by automatically deciding to speed up incoming audio to a rate where the system can keep up. This involves some audio processing code, which may or may not be desirable.
 
-A non-realtime session ignores this problem and assumes the system is fast enough. If this is not the case, the results will fall behind, the internal buffer will start to get full, `ErrorCantKeepUp` result will be called, and the results may be horrible.
+Speeding up audio may reduce accuracy. It may not be severe at small values (such as 1.2x), but at larger values (such as over 2.0x) the accuracy may be severely impacted. There is a method you can call to get the current speedup value to know when this is happening, so you can display a warning to the user or similar.
+
+A non-realtime session ignores this problem and assumes the system is fast enough. If this is not the case, the results will fall behind, the internal buffer will get full, `ErrorCantKeepUp` result will be called, and the results will be disastrously horrible.
 
 ## Handler
 
-A session needs a handler function to get results. The handler gets called by the session whenever it has new results. The typical parameters are the result type and the token array.
+The results are given via a callback (handler). It gets called by the session whenever it has new results. The parameters given to the callback include the result type and the token array.
 
-Note that in an asynchronous session, the handler will be called from a different thread.
+Note that in an asynchronous session, the handler will be called from a different thread. Be sure to expect this and write thread-safe code, or use a synchronous session.
 
 You should try to make your handler function fast to avoid slowing down the session.
 
