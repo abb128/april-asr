@@ -8,3 +8,4 @@
 # Language Bindings
 
 - [Python](./python.md)
+- [C#](./csharp.md)

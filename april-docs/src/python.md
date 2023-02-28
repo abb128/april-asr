@@ -2,7 +2,7 @@
 
 ## Installation
 
-TODO: Publish on PyPi
+Run `pip install april_asr`
 
 
 ## Getting Started
@@ -139,7 +139,7 @@ audio_path = "audio.wav"
 model = april.Model(model_path)
 
 
-def handler(result_type: april.Result, tokens: april.Token):
+def handler(result_type, tokens):
     s = ""
     for token in tokens:
         s = s + token.token
