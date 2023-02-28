@@ -56,6 +56,11 @@ jobs:
         shell: bash
         run: cmake --build . --config RELEASE
 
+      - name: Ensure wheel is installed
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install wheel
+      
       - name: Build Python whl
         working-directory: ${{github.workspace}}/bindings/python
         shell: bash
