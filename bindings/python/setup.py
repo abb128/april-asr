@@ -23,6 +23,10 @@ for l in PRECOMP_LIBS:
         print("Adding library", lib)
         shutil.copy(lib, "april_asr")
 
+# Ensure has the correct suffix (e.g. libonnxruntime.so.1.13.1)
+for lib in glob.glob("../lib/lib/libonnxruntime.so.*"):
+    shutil.move("april_asr/libonnxruntime.so", "april_asr/libonnxruntime.so" + lib.split("libonnxruntime.so")[1])
+
 # Create OS-dependent, but Python-independent wheels.
 try:
     from wheel.bdist_wheel import bdist_wheel

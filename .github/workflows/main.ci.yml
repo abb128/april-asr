@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-20.04, windows-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -25,13 +25,13 @@ jobs:
         with:
           submodules: recursive
       
-      - if: matrix.os == 'ubuntu-latest'
+      - if: matrix.os == 'ubuntu-20.04'
         name: Install apt packages
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
           packages: build-essential cmake wget tar
 
-      - if: matrix.os == 'ubuntu-latest'
+      - if: matrix.os == 'ubuntu-20.04'
         name: Download ONNXRuntime (Linux)
         shell: bash
         working-directory: ${{github.workspace}}
@@ -56,15 +56,21 @@ jobs:
         shell: bash
         run: cmake --build . --config RELEASE
 
-      - name: Ensure wheel is installed
+      - name: Ensure wheel and auditwheel are installed
         run: |
           python3 -m pip install --upgrade pip
-          python3 -m pip install wheel
+          python3 -m pip install wheel auditwheel
       
       - name: Build Python whl
         working-directory: ${{github.workspace}}/bindings/python
         shell: bash
         run: python3 setup.py bdist_wheel
+
+      - if: matrix.os == 'ubuntu-20.04'
+        name: Fix Linux wheel
+        working-directory: ${{github.workspace}}/bindings/python
+        shell: bash
+        run: mkdir wheelhouse && auditwheel repair dist/april_asr-0.0.1-py3-none-linux_x86_64.whl --plat manylinux_2_31_x86_64
 
       - if: matrix.os == 'windows-latest'
         name: Upload libaprilasr.dll
@@ -87,24 +93,24 @@ jobs:
           name: windows-python-dist
           path: ${{github.workspace}}/bindings/python/dist
       
-      - if: matrix.os == 'ubuntu-latest'
+      - if: matrix.os == 'ubuntu-20.04'
         name: Upload libaprilasr.so
         uses: actions/upload-artifact@v3.1.0
         with:
           name: libaprilasr.so
           path: ${{github.workspace}}/build/libaprilasr.so
 
-      - if: matrix.os == 'ubuntu-latest'
+      - if: matrix.os == 'ubuntu-20.04'
         name: Upload libonnxruntime.so
         uses: actions/upload-artifact@v3.1.0
         with:
           name: libonnxruntime.so
           path: ${{github.workspace}}/lib/lib/libonnxruntime.so
 
-      - if: matrix.os == 'ubuntu-latest'
+      - if: matrix.os == 'ubuntu-20.04'
         name: Upload Python wheel
         uses: actions/upload-artifact@v3.1.0
         with:
           name: ubuntu-python-dist
-          path: ${{github.workspace}}/bindings/python/dist
+          path: ${{github.workspace}}/bindings/python/wheelhouse
       
