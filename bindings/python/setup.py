@@ -76,5 +76,5 @@ setuptools.setup(
     python_requires='>=3',
     zip_safe=False, # Since we load so file from the filesystem, we can not run from zip file
     setup_requires=[],
-    install_requires=[]
+    install_requires=["librosa"]
 )

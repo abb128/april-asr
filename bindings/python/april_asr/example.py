@@ -1,3 +1,4 @@
+import librosa
 import april_asr as april
 import sys
 
@@ -25,10 +26,11 @@ def run(model_path, wav_file_path):
     # Create a session
     session = april.Session(model, example_handler)
 
+    # Read the audio file, works with any audio filetype librosa supports
+    data, sr = librosa.load(wav_file_path, sr=model.get_sample_rate(), mono=True)
+    data = (data * 32767).astype("short").astype("<u2").tobytes()
+
     # Feed the audio data
-    with open(wav_file_path, "rb") as f:
-        data = f.read()
-    
     session.feed_pcm16(data)
 
     # Flush to finish off
