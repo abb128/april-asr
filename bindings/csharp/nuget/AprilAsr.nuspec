@@ -11,6 +11,6 @@
     </dependencies>
   </metadata>
   <files>
-    <file src="**" exclude="src/*.cs;build.sh;**/.keep-me;*.nupkg" />
+    <file src="**" exclude="src/*.cs;build.sh;build.bat;**/.keep-me;*.nupkg" />
   </files>
 </package>
