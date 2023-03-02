@@ -74,7 +74,7 @@ jobs:
         name: Fix Linux wheel
         working-directory: ${{github.workspace}}/bindings/python
         shell: bash
-        run: mkdir wheelhouse && auditwheel repair dist/april_asr-0.0.1-py3-none-linux_x86_64.whl --plat manylinux_2_31_x86_64
+        run: mkdir wheelhouse && auditwheel repair dist/april_asr-*-py3-none-linux_x86_64.whl --plat manylinux_2_31_x86_64
 
       - if: matrix.os == 'windows-latest'
         name: Upload libaprilasr.dll
