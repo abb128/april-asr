@@ -16,3 +16,5 @@ bindings/csharp/AprilAsrDemo/bin
 bindings/csharp/AprilAsrDemo/obj
 bindings/python/build
 bindings/python/dist
+april-docs/src/csharp/html
+april-docs/src/april_asr
