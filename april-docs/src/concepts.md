@@ -20,7 +20,7 @@ After loading a model, you can create one or more sessions that use the model.
 
 In the most common case, you will have one session based on one model.
 
-The session is what performs the actual recognition. It has the functions to input audio, and it calls the handler with decoded results.
+The session is what performs the actual speech recognition. It has methods to input audio, and it calls your given handler with decoded results.
 
 <!--(This feature is not yet implemented) When creating a session, you may specify a speaker ID or name. If not empty, this may be used to save and restore the hidden state, to help initialize the session in a way it can provide more accurate results instantly for a particular speaker. -->
 
