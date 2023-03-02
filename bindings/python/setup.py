@@ -1,8 +1,14 @@
+"""
+Setup script for april_asr. Before running this, you must have compiled the C
+library dll or so
+"""
+
+
 import os
-import setuptools
 import shutil
 import glob
 import platform
+import setuptools
 
 april_build = os.getenv("APRIL_BUILD", os.path.abspath(os.path.join(os.path.dirname(__file__),
     "../../build")))
@@ -25,7 +31,10 @@ for l in PRECOMP_LIBS:
 
 # Ensure has the correct suffix (e.g. libonnxruntime.so.1.13.1)
 for lib in glob.glob("../lib/lib/libonnxruntime.so.*"):
-    shutil.move("april_asr/libonnxruntime.so", "april_asr/libonnxruntime.so" + lib.split("libonnxruntime.so")[1])
+    shutil.move(
+        "april_asr/libonnxruntime.so",
+        "april_asr/libonnxruntime.so" + lib.split("libonnxruntime.so")[1]
+    )
 
 # Create OS-dependent, but Python-independent wheels.
 try:
@@ -33,6 +42,7 @@ try:
 except ImportError:
     cmdclass = {}
 else:
+    # pylint: disable-next=invalid-name,missing-class-docstring
     class bdist_wheel_tag_name(bdist_wheel):
         def get_tag(self):
             abi = 'none'
@@ -56,7 +66,7 @@ with open("README.md", "rb") as fh:
 
 setuptools.setup(
     name="april_asr",
-    version="0.0.1",
+    version="0.0.2",
     author="abb128",
     author_email="april@sapples.net",
     description="Offline open source speech recognition API based on next-generation Kaldi",

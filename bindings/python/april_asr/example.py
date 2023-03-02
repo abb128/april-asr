@@ -1,20 +1,28 @@
+"""
+Example of a program that uses april_asr to perform speech recognition on a
+file
+"""
+
+import sys
 import librosa
 import april_asr as april
-import sys
 
 def example_handler(result_type, tokens):
-    s = ""
+    """Simple handler that concatenates all tokens and prints it"""
+    prefix = "."
+    if result_type == april.Result.FINAL_RECOGNITION:
+        prefix = "@"
+    elif result_type == april.Result.PARTIAL_RECOGNITION:
+        prefix = "-"
+
+    string = ""
     for token in tokens:
-        s = s + token.token
-    
-    if result_type == april.Result.FinalRecognition:
-        print("@"+s)
-    elif result_type == april.Result.PartialRecognition:
-        print("-"+s)
-    else:
-        print("")
+        string += token.token
+
+    print(f"{prefix}{string}")
 
 def run(model_path, wav_file_path):
+    """Creates a model and session, and performs recognition on the given file"""
     # Load the model
     model = april.Model(model_path)
 
@@ -27,7 +35,7 @@ def run(model_path, wav_file_path):
     session = april.Session(model, example_handler)
 
     # Read the audio file, works with any audio filetype librosa supports
-    data, sr = librosa.load(wav_file_path, sr=model.get_sample_rate(), mono=True)
+    data, _ = librosa.load(wav_file_path, sr=model.get_sample_rate(), mono=True)
     data = (data * 32767).astype("short").astype("<u2").tobytes()
 
     # Feed the audio data
@@ -37,11 +45,12 @@ def run(model_path, wav_file_path):
     session.flush()
 
 def main():
+    """Checks the given arguments and prints usage or calls the run function"""
     # Parse arguments
     args = sys.argv
     if len(args) != 3:
         print("Usage: " + args[0] + " /path/to/model.april /path/to/file.wav")
-    else:    
+    else:
         run(args[1], args[2])
 
 if __name__ == "__main__":
