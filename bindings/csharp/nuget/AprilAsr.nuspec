@@ -4,8 +4,10 @@
     <id>AprilAsr</id>
     <version>0.0.1.6</version>
     <authors>abb128</authors>
+    <license>GPL-3.0-only</license>
+    <projectUrl>https://abb128.github.io/april-asr/</projectUrl>
     <title>April Speech Recognition</title>
-    <description>Offline speech recognition</description>
+    <description>Offline realtime speech recognition</description>
     <dependencies>
       <group targetFramework=".NETStandard2.0"/>
     </dependencies>

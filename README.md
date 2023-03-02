@@ -1,6 +1,8 @@
 # april-asr
 
-aprilasr is a minimal library that provides an API for offline streaming speech-to-text applications
+[aprilasr](https://github.com/abb128/april-asr) is a minimal library that provides an API for offline streaming speech-to-text applications
+
+[Documentation](https://abb128.github.io/april-asr/concepts.html)
 
 ## Status
 This library is currently under development. Some features are unimplemented, it may have bugs and crashes, and there may be significant changes to the API. It may not yet be production-ready.
@@ -8,7 +10,7 @@ This library is currently under development. Some features are unimplemented, it
 Furthermore, there's only one model that only does English and has some accuracy issues at that.
 
 ### Language support
-The library has a C API, and there are C# and Python bindings available, but these have not yet been published to PyPi or nuget.
+The library has a C API, and there are C# and Python bindings available, but these may not be stable yet.
 
 ## Example
 An example use of this library is provided in `example.cpp`. It can perform speech recognition on a wave file, or do streaming recognition by reading stdin.
