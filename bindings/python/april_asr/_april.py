@@ -2,10 +2,32 @@
 Public interface for april_asr
 """
 
+from typing import Callable, List
 import ctypes
 import struct
 from enum import IntEnum
 from . import _april_c_ffi as _c
+
+class Result(IntEnum):
+    """
+    Result type that is passed to your handler
+    """
+
+    PARTIAL_RECOGNITION = 1,
+    """A partial recognition. The next handler call will contain an updated
+    list of tokens."""
+
+    FINAL_RECOGNITION = 2,
+    """A final recognition. The next handler call will start from an empty
+    token list."""
+
+    ERROR_CANT_KEEP_UP = 3,
+    """In an asynchronous session, this may be called when the system can't
+    keep up with the incoming audio, and samples have been dropped. The
+    accuracy will be affected. An empty token list is given"""
+
+    SILENCE = 4
+    """Called after some silence. An empty token list is given"""
 
 class Token:
     """
@@ -20,6 +42,11 @@ class Token:
     not it's a word boundary. In English, the word boundary value is equivalent
     to checking if the first character is a space.
     """
+
+    token: str = ""
+    logprob: float = 0.0
+    word_boundary: bool = False
+
     def __init__(self, token):
         self.token = token.token.decode("utf-8")
         self.logprob = token.logprob
@@ -44,19 +71,19 @@ class Model:
         if self._handle is None:
             raise Exception("Failed to load model")
 
-    def get_name(self):
+    def get_name(self) -> str:
         """Get the name from the model's metadata"""
         return _c.ffi.aam_get_name(self._handle)
 
-    def get_description(self):
+    def get_description(self) -> str:
         """Get the description from the model's metadata"""
         return _c.ffi.aam_get_description(self._handle)
 
-    def get_language(self):
+    def get_language(self) -> str:
         """Get the language from the model's metadata"""
         return _c.ffi.aam_get_language(self._handle)
 
-    def get_sample_rate(self):
+    def get_sample_rate(self) -> int:
         """Get the sample rate from the model's metadata"""
         return _c.ffi.aam_get_sample_rate(self._handle)
 
@@ -84,8 +111,12 @@ class Session:
 
     You need to pass a Model when constructing a Session.
     """
-    def __init__(self, model: Model, callback, asynchronous: bool=False,
-            no_rt: bool=False, speaker_name: str=""
+    def __init__(self,
+            model: Model,
+            callback: Callable[[Result, List[Token]], None],
+            asynchronous: bool = False,
+            no_rt: bool = False,
+            speaker_name: str = ""
         ):
         config = _c.AprilConfig()
         config.flags = _c.AprilConfigFlagBits()
@@ -111,7 +142,7 @@ class Session:
 
         self.callback = callback
 
-    def get_rt_speedup(self):
+    def get_rt_speedup(self) -> float:
         """
         If the session is asynchronous and realtime, this will return a
         positive float. A value below 1.0 means the session is keeping up, and
@@ -121,7 +152,7 @@ class Session:
         """
         return _c.ffi.aas_realtime_get_speedup(self._handle)
 
-    def feed_pcm16(self, data: bytes):
+    def feed_pcm16(self, data: bytes) -> None:
         """
         Feed the given pcm16 samples in bytes to the session. If the session is
         asynchronous, this will return immediately and queue the data for the
@@ -131,7 +162,7 @@ class Session:
         """
         _c.ffi.aas_feed_pcm16(self._handle, data)
 
-    def flush(self):
+    def flush(self) -> None:
         """
         Flush any remaining samples and force the session to produce a final
         result.
@@ -142,15 +173,3 @@ class Session:
         _c.ffi.aas_free(self._handle)
         self.model = None
         self._handle = None
-
-
-class Result(IntEnum):
-    """
-    Result type that is passed to your handler
-    """
-
-    UNKNOWN = 0,
-    PARTIAL_RECOGNITION = 1,
-    FINAL_RECOGNITION = 2,
-    ERROR_CANT_KEEP_UP = 3,
-    SILENCE = 4

@@ -3,11 +3,12 @@ Example of a program that uses april_asr to perform speech recognition on a
 file
 """
 
+from typing import List
 import sys
 import librosa
 import april_asr as april
 
-def example_handler(result_type, tokens):
+def example_handler(result_type: april.Result, tokens: List[april.Token]):
     """Simple handler that concatenates all tokens and prints it"""
     prefix = "."
     if result_type == april.Result.FINAL_RECOGNITION:
@@ -21,7 +22,7 @@ def example_handler(result_type, tokens):
 
     print(f"{prefix}{string}")
 
-def run(model_path, wav_file_path):
+def run(model_path: str, wav_file_path: str) -> None:
     """Creates a model and session, and performs recognition on the given file"""
     # Load the model
     model = april.Model(model_path)
