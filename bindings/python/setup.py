@@ -66,7 +66,7 @@ with open("README.md", "rb") as fh:
 
 setuptools.setup(
     name="april_asr",
-    version="0.0.2",
+    version="0.0.3",
     author="abb128",
     author_email="april@sapples.net",
     description="Offline open source speech recognition API based on next-generation Kaldi",
