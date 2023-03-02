@@ -85,4 +85,10 @@ Currently I'm developing [Live Captions](https://github.com/abb128/LiveCaptions)
 ## Acknowledgements
 Thanks to the [k2-fsa/icefall](https://github.com/k2-fsa/icefall) contributors for creating the speech recognition recipes and models.
 
+This project makes use of a few libraries:
+* pocketfft, authored by Martin Reinecke, Copyright (C) 2008-2018 Max-Planck-Society, licensed under BSD-3-Clause
+* Sonic library, authored by Bill Cox, Copyright (C) 2010 Bill Cox, licensed under Apache 2.0 license
+* tinycthread, authored by Marcus Geelnard and Evan Nemerson, licensed under zlib/libpng license
+
+
 The bindings are based on the [Vosk API bindings](https://github.com/alphacep/vosk-api), which is another speech recognition library based on previous-generation Kaldi. Vosk is Copyright 2019 Alpha Cephei Inc. and licensed under the Apache 2.0 license.

@@ -2,7 +2,7 @@
 <package>
   <metadata>
     <id>AprilAsr</id>
-    <version>0.0.1.5</version>
+    <version>0.0.1.6</version>
     <authors>abb128</authors>
     <title>April Speech Recognition</title>
     <description>Offline speech recognition</description>

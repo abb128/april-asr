@@ -144,8 +144,6 @@ Console.WriteLine("Language: " + model.Language);
 
 // Create the session with an inline callback
 var session = new AprilSession(model, (result, tokens) => {
-    if (tokens == null) return;
-
     string s = "";
     if(result == AprilResultKind.PartialRecognition) {
         s = "- ";

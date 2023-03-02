@@ -23,9 +23,18 @@ namespace AprilAsr
             IntPtr userdata,
             int resultType,
             ulong numTokens,
-            AprilToken[] tokens
+            AprilToken[] o_tokens
         )
         {
+            if(o_tokens == null) numTokens = 0;
+            
+            var tokens = new AprilToken[numTokens];
+            if(o_tokens != null){
+                for(ulong i=0; i<numTokens; i++){
+                    tokens[i] = o_tokens[i];
+                }
+            }
+            
             this.callback((AprilResultKind)resultType, tokens);
         }
 
