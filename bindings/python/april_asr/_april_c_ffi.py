@@ -114,6 +114,9 @@ class AprilFFI:
 
 
 def _load_library():
+    if os.environ.get('GH_DOCS_CI_DONT_LOAD_APRIL_ASR') is not None:
+        return None
+    
     dlldir = os.path.abspath(os.path.dirname(__file__))
     if sys.platform == "win32":
         # We want to load dependencies too

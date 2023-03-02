@@ -30,7 +30,7 @@ jobs:
     - name: Build Python API reference
       working-directory: ${{github.workspace}}/april-docs
       run: |
-        pdoc3 ../bindings/python/april_asr --skip-errors --html --force -o src
+        GH_DOCS_CI_DONT_LOAD_APRIL_ASR=1 pdoc3 ../bindings/python/april_asr --skip-errors --html --force -o src
         sed -i 's/april_asr\._april/april_asr/g' src/april_asr/*.html
 
     - name: Install mdbook
