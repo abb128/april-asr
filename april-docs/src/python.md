@@ -41,9 +41,9 @@ def handler(result_type, tokens):
     for token in tokens:
         s = s + token.token
     
-    if result_type == april.Result.FinalRecognition:
+    if result_type == april.Result.FINAL_RECOGNITION:
         print("@"+s)
-    elif result_type == april.Result.PartialRecognition:
+    elif result_type == april.Result.PARTIAL_RECOGNITION:
         print("-"+s)
     else:
         print("")
@@ -59,7 +59,8 @@ session = april.Session(model, handler)
 
 There are more options when it comes to creating a session, here is the initializer signature:
 ```py
-def __init__(self, model, callback, asynchronous=False, no_rt=False, speaker_name=""):
+ class Session (model: april_asr.Model, callback: Callable[[april_asr.Result, List[april_asr.Token]], None], asynchronous: bool = False, no_rt: bool = False, speaker_name: str = '')
+
 ```
 
 Refer to the General Concepts page for an explanation on asynchronous, non-realtime, and speaker name options
