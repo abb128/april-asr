@@ -145,9 +145,9 @@ def handler(result_type, tokens):
     for token in tokens:
         s = s + token.token
     
-    if result_type == april.Result.FinalRecognition:
+    if result_type == april.Result.FINAL_RECOGNITION:
         print("@"+s)
-    elif result_type == april.Result.PartialRecognition:
+    elif result_type == april.Result.PARTIAL_RECOGNITION:
         print("-"+s)
     else:
         print("")
