@@ -32,7 +32,7 @@ public class AprilAsrNative {
     };
 
     public static interface AprilRecognitionResultHandler extends Callback {
-        void invoke(Pointer userdata, int result, NativeLong count, AprilToken[] tokens);
+        void invoke(Pointer userdata, int result, NativeLong count, Pointer tokens);
     }
 
     @FieldOrder({"speaker", "handler", "userdata", "flags"})

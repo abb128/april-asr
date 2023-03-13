@@ -3,11 +3,33 @@
  */
 package aprilasr;
 
+import com.sun.jna.Pointer;
+import com.sun.jna.NativeLong;
+import com.sun.jna.CallbackReference;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class LibraryTest {
     @Test void apiCanInitialize() {
         AprilAsrNative.aam_api_init(AprilAsrNative.APRIL_VERSION);
+
+        Pointer model = AprilAsrNative.aam_create_model("/home/hp/Downloads/aprilv0_en-us.april");
+        assertTrue(model != null);
+
+        Pointer fake_model = AprilAsrNative.aam_create_model("/tmp/fake123");
+        assertTrue(fake_model == null);
+
+        AprilAsrNative.AprilConfig config = new AprilAsrNative.AprilConfig();
+
+        AprilAsrNative.AprilRecognitionResultHandler handler = new AprilAsrNative.AprilRecognitionResultHandler() {
+            public void invoke(Pointer userdata, int result, NativeLong count, Pointer tokens) {
+                assertTrue(result != 0);
+            }
+        };
+
+        config.handler = handler;
+
+        Pointer session = AprilAsrNative.aas_create_session(model, config);
+        assertTrue(session != null);
     }
 }
