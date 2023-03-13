@@ -135,3 +135,6 @@ target_link_libraries(aprilasr ${onnx_link_libraries})
 
 add_executable(main example.cpp)
 target_link_libraries(main PRIVATE aprilasr_static ${onnx_link_libraries})
+
+add_executable(srt example_srt.cpp)
+target_link_libraries(srt PRIVATE aprilasr_static ${onnx_link_libraries})
