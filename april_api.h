@@ -123,6 +123,13 @@ typedef struct AprilToken {
 
     /* See AprilTokenFlagBits */
     AprilTokenFlagBits flags;
+
+    /* The millisecond at which this was emitted. Counting is based on how much
+       audio is being fed (time is not advanced when the session is not being
+       given audio) */
+    size_t time_ms;
+
+    void *reserved;
 } AprilToken;
 
 /* (void* userdata, AprilResultType result, size_t count, const AprilToken *tokens);

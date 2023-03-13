@@ -46,11 +46,13 @@ class Token:
     token: str = ""
     logprob: float = 0.0
     word_boundary: bool = False
+    time: float = 0.0
 
     def __init__(self, token):
         self.token = token.token.decode("utf-8")
         self.logprob = token.logprob
         self.word_boundary = (token.flags.value & 1) != 0
+        self.time = float(token.time) / 1000.0
 
 class Model:
     """

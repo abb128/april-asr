@@ -17,14 +17,18 @@ import java.nio.file.StandardCopyOption;
 public class AprilAsrNative {
     @FieldOrder({"data"})
     public static class AprilSpeakerID extends Structure {
-        byte[] data = new byte[16];
+        public byte[] data = new byte[16];
+
+        public AprilSpeakerID(){}
     };
 
     @FieldOrder({"token","logprob","flags"})
     public static class AprilToken extends Structure {
-        String token;
-        float logprob;
-        int flags;
+        public String token;
+        public float logprob;
+        public int flags;
+        public NativeLong time_ms;
+        private Pointer reserved;
     };
 
     public static interface AprilRecognitionResultHandler extends Callback {
@@ -33,12 +37,14 @@ public class AprilAsrNative {
 
     @FieldOrder({"speaker", "handler", "userdata", "flags"})
     public static class AprilConfig extends Structure {
-        AprilSpeakerID speaker;
+        public AprilSpeakerID speaker = new AprilSpeakerID();
         
-        AprilRecognitionResultHandler handler;
-        Pointer userdata;
+        public AprilRecognitionResultHandler handler = null;
+        public Pointer userdata = null;
 
-        int flags;
+        public int flags = 0;
+
+        public AprilConfig(){}
     };
 
     private static void unpackDll(File targetDir, String lib) throws IOException {

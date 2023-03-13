@@ -22,6 +22,8 @@ namespace AprilAsr
         private IntPtr _token;
         private float _logProb;
         private int _flags;
+        private UIntPtr _timeMs;
+        private IntPtr _reserved;
 
         /// <value>The token as a string</value>
         public string Token
@@ -39,6 +41,16 @@ namespace AprilAsr
         public bool WordBoundary
         {
             get { return (_flags & 1) != 0; }
+        }
+
+        /// <value>
+        /// The millisecond at which this was emitted. Counting is based on how much
+        /// audio is being fed (time is not advanced when the session is not being
+        /// given audio)
+        /// </value>
+        public float Time
+        {
+            get { return (float)(((double)_timeMs.ToUInt64()) / 1000.0); }
         }
     }
 }

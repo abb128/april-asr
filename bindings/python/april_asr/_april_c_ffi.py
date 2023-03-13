@@ -18,7 +18,9 @@ class AprilToken(ctypes.Structure):
     """Equivalent to AprilToken struct in C header"""
     _fields_ = [("token", ctypes.c_char_p),
                 ("logprob", ctypes.c_float),
-                ("flags", AprilTokenFlagBits)]
+                ("flags", AprilTokenFlagBits),
+                ("time_ms", ctypes.c_size_t),
+                ("reserved", ctypes.c_void_p)]
 
 AprilRecognitionResultHandler = ctypes.CFUNCTYPE(None,
     ctypes.c_void_p, ctypes.c_int, ctypes.c_size_t, ctypes.POINTER(AprilToken))

@@ -300,8 +300,8 @@ void aas_clear_context(AprilASRSession aas) {
         aas_update_context(aas, aas->model->params.blank_id);
 }
 
-// Processes current data in aas->logits. Returns true if new token was
-// added, else returns false if no new data is available. Updates
+// Processes current data in aas->logits. Returns false if new token was
+// added, else returns true if no new data is available. Updates
 // aas->context and aas->active_tokens. Uses basic greedy search algorithm.
 bool aas_process_logits(AprilASRSession aas, float early_emit){
     ModelParameters *params = &aas->model->params;
@@ -329,6 +329,7 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
 
 
     AprilToken token = { get_token(params, max_idx), max_val };
+    token.time_ms = aas->current_time_ms;
 
     // works for English and other latin languages, may need to do something
     // different here for other languages like Chinese
