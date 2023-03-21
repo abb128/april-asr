@@ -10,26 +10,25 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class LibraryTest {
-    @Test void apiCanInitialize() {
-        AprilAsrNative.aam_api_init(AprilAsrNative.APRIL_VERSION);
-
+    @Test void canLoadModel() {
         Pointer model = AprilAsrNative.aam_create_model("/home/hp/Downloads/aprilv0_en-us.april");
-        assertTrue(model != null);
+        assertNotNull(model);
 
+        AprilAsrNative.aam_free(model);
+    }
+
+    @Test void cantLoadFakeModel() {
         Pointer fake_model = AprilAsrNative.aam_create_model("/tmp/fake123");
-        assertTrue(fake_model == null);
+        assertNull(fake_model);
+    }
 
-        AprilAsrNative.AprilConfig config = new AprilAsrNative.AprilConfig();
+    @Test void canUseModel() {
+        Model wrapped_model = new Model("/home/hp/Downloads/aprilv0_en-us.april");
+        assertEquals(16000, wrapped_model.getSampleRate());
 
-        AprilAsrNative.AprilRecognitionResultHandler handler = new AprilAsrNative.AprilRecognitionResultHandler() {
-            public void invoke(Pointer userdata, int result, NativeLong count, Pointer tokens) {
-                assertTrue(result != 0);
-            }
-        };
+        Session wrapped_session = new Session(wrapped_model);
 
-        config.handler = handler;
-
-        Pointer session = AprilAsrNative.aas_create_session(model, config);
-        assertTrue(session != null);
+        short[] blank = new short[16000];
+        wrapped_session.feedPCM16(blank, 1792);
     }
 }

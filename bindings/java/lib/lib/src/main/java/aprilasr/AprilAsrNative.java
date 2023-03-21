@@ -7,6 +7,7 @@ import com.sun.jna.NativeLong;
 import com.sun.jna.Callback;
 import com.sun.jna.Structure;
 import com.sun.jna.Structure.FieldOrder;
+
 import java.io.File;
 import java.io.InputStream;
 import java.io.IOException;
@@ -15,20 +16,18 @@ import java.nio.file.StandardCopyOption;
 
 
 public class AprilAsrNative {
-    @FieldOrder({"data"})
-    public static class AprilSpeakerID extends Structure {
-        public byte[] data = new byte[16];
-
-        public AprilSpeakerID(){}
-    };
-
-    @FieldOrder({"token","logprob","flags"})
+    @FieldOrder({"token","logprob","flags", "time_ms", "reserved"})
     public static class AprilToken extends Structure {
         public String token;
         public float logprob;
         public int flags;
         public NativeLong time_ms;
-        private Pointer reserved;
+        public Pointer reserved;
+
+        public AprilToken(Pointer p) {
+            super(p);
+            read();
+        }
     };
 
     public static interface AprilRecognitionResultHandler extends Callback {
@@ -37,9 +36,11 @@ public class AprilAsrNative {
 
     @FieldOrder({"speaker", "handler", "userdata", "flags"})
     public static class AprilConfig extends Structure {
-        public AprilSpeakerID speaker = new AprilSpeakerID();
+        public static class ByValue extends AprilConfig implements Structure.ByValue { }
+
+        public byte[] speaker = new byte[16];
         
-        public AprilRecognitionResultHandler handler = null;
+        public Pointer handler = null;
         public Pointer userdata = null;
 
         public int flags = 0;
@@ -71,6 +72,8 @@ public class AprilAsrNative {
         } else {
             Native.register(AprilAsrNative.class, "aprilasr");
         }
+
+        AprilAsrNative.aam_api_init(AprilAsrNative.APRIL_VERSION);
     }
 
     public static final int APRIL_VERSION = 1;
@@ -86,8 +89,8 @@ public class AprilAsrNative {
 
     public static native void aam_free(Pointer model);
 
-    public static native Pointer aas_create_session(Pointer model, AprilConfig config);
-    public static native void aas_feed_pcm16(Pointer session, short[] pcm16, NativeLong short_count);
+    public static native Pointer aas_create_session(Pointer model, AprilConfig.ByValue config);
+    public static native void aas_feed_pcm16(Pointer session, short[] pcm16, long short_count);
     public static native void aas_flush(Pointer session);
 
     public static native float aas_realtime_get_speedup(Pointer session);
