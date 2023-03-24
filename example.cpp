@@ -10,7 +10,9 @@
 #include <unistd.h>
 #else
 #include <io.h>
+#include <BaseTsd.h>
 #define STDIN_FILENO 0
+typedef SSIZE_T ssize_t;
 #endif
 
 #define BUFFER_SIZE 1024

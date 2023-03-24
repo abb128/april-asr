@@ -10,7 +10,9 @@
 #include <unistd.h>
 #else
 #include <io.h>
+#include <BaseTsd.h>
 #define STDIN_FILENO 0
+typedef SSIZE_T ssize_t;
 #endif
 
 #define BUFFER_SIZE 1024
@@ -177,8 +179,18 @@ int main(int argc, char *argv[]){
         // $ parec --format=s16 --rate=16000 --channels=1 --latency-ms=100 | ./main - /path/to/model.april
 
         char data[BUFFER_SIZE];
+        ssize_t r;
         for(;;){
-            size_t r = read(STDIN_FILENO, &data[r], BUFFER_SIZE - r);
+            r = read(STDIN_FILENO, data, BUFFER_SIZE);
+            
+            if (r == -1) {
+                aas_flush(session);
+                break;
+            } else
+            if (r <= 0) {
+                continue;
+            }
+            
             aas_feed_pcm16(session, (short *)data, r/2);
         }
     } else if (argv[1][0] == '?' && argv[1][1] == 0) {
