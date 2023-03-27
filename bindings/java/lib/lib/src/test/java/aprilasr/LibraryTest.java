@@ -115,4 +115,65 @@ class LibraryTest {
         short[] blank = new short[16000];
         wrapped_session.feedPCM16(blank, 1792);
     }
+
+    @Test void asynchronousTest() throws IOException, InterruptedException {
+        URL url = new URL("https://april.sapples.net/zoo.wav");
+        HttpURLConnection con = (HttpURLConnection) url.openConnection();
+        con.setRequestMethod("GET");
+        int status = con.getResponseCode();
+        assertEquals(status, 200);
+
+        InputStream in = con.getInputStream();
+
+        byte[] data = in.readAllBytes();
+        short[] shorts = new short[data.length / 2];
+
+        for (int i = 0; i < shorts.length; i++) {
+            shorts[i] = (short) ((data[i * 2] & 0xff) | (data[i * 2 + 1] << 8));
+        }
+
+        Model wrapped_model = new Model("/home/hp/Downloads/aprilv0_en-us.april");
+        assertEquals(16000, wrapped_model.getSampleRate());
+
+        final String[] text = {""};
+        Session.CallbackHandler handler = new Session.CallbackHandler() {
+            @Override
+            public void onPartialResult(Token[] tokens) {
+                System.out.println("Partial: " + Token.concat(tokens));
+            }
+
+            @Override
+            public void onFinalResult(Token[] tokens) {
+                System.out.println("Final: " + Token.concat(tokens));
+                text[0] += Token.concat(tokens) + "\n";
+            }
+
+            @Override
+            public void onSilence() {
+                System.out.println("Silence");
+            }
+
+            @Override
+            public void onErrorCantKeepUp() {
+                System.out.println("Error");
+            }
+        };
+
+        Session wrapped_session = new Session(wrapped_model, handler, true, false, "YouTube");
+
+        short[] current = new short[3600];
+        for(int i=0; i<shorts.length/3600; i++){
+            for(int j=0; j<3600; j++) current[j] = shorts[i*3600 + j];
+
+            wrapped_session.feedPCM16(current, 3600);
+
+            Thread.sleep(3600 * 1000 / 16000);
+
+        }
+
+        wrapped_session.flush();
+
+        assertTrue(text[0].contains("ELEPHANT"));
+        assertTrue(text[0].contains("COOL"));
+    }
 }
