@@ -361,7 +361,7 @@ def export_model_onnx(model: nn.Module, sp, opset_version: int = 11) -> Tuple[By
     # write sentence pieces
     print("write ",sp.get_piece_size(), " pieces")
     for i in range(sp.get_piece_size()):
-        piece = sp.id_to_piece(i).replace("\u2581", " ").encode("ascii")
+        piece = sp.id_to_piece(i).replace("\u2581", " ").encode("utf-8")
         params_b.write(struct.pack("<i", len(piece)))
         params_b.write(piece)
 
