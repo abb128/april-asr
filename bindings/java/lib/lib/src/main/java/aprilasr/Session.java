@@ -57,13 +57,22 @@ public class Session {
 
     private Pointer handle;
 
-    public Session(Model model, CallbackHandler handler) {
+    public Session(Model model, CallbackHandler handler, boolean async, boolean noRT, String speakerName) {
         this.model = model;
         this.nativeHandler = new NativeHandler(handler);
 
         AprilAsrNative.AprilConfig.ByValue config = new AprilAsrNative.AprilConfig.ByValue();
         config.handler = CallbackReference.getFunctionPointer(this.nativeHandler);
-        config.flags = 0;
+        config.flags = (async && noRT) ? 2 : (async ? 1 : 0);
+
+        if((speakerName != null) && (speakerName.length() > 0)){
+            int nameHash = speakerName.hashCode();
+            config.speaker[0] = (byte)(nameHash >>> 24);
+            config.speaker[1] = (byte)(nameHash >>> 16);
+            config.speaker[2] = (byte)(nameHash >>> 8);
+            config.speaker[3] = (byte)(nameHash);
+        }
+
 
         Pointer session = AprilAsrNative.aas_create_session(model.handle, config);
         if(session == null){
@@ -71,6 +80,18 @@ public class Session {
         }
 
         this.handle = session;
+    }
+
+    public Session(Model model, CallbackHandler handler, boolean async, String speakerName) {
+        this(model, handler, async, false, speakerName);
+    }
+
+    public Session(Model model, CallbackHandler handler, boolean async) {
+        this(model, handler, async, false, null);
+    }
+
+    public Session(Model model, CallbackHandler handler) {
+        this(model, handler, false, false, null);
     }
 
     public void feedPCM16(short[] data, int length) {
