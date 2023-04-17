@@ -1,15 +1,15 @@
 /*
  * Copyright (C) 2022 abb128
- * 
+ *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
@@ -77,7 +77,7 @@ AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config) {
     aas->handler = config.handler;
     aas->userdata = config.userdata;
     aas->speed_needed = 1.0;
-    
+
     if(aas->handler == NULL) {
         LOG_ERROR("No handler provided! A handler is required, please provide a handler");
         aas_free(aas);
@@ -335,6 +335,19 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
     // different here for other languages like Chinese
     if (token.token[0] == ' ') token.flags |= APRIL_TOKEN_FLAG_WORD_BOUNDARY_BIT;
 
+    // Be more liberal with applying punctuation (might be just a model issue)
+    bool is_punct = (token.token[0] == '.') || (token.token[0] == ',') || (token.token[0] == '!') || (token.token[0] == '?');
+    if(is_punct && (!is_equal_to_previous) && (max_val > (blank_val - 3.5f))) {
+        if(aas->active_token_head > 0) {
+            const char *last_token = aas->active_tokens[aas->active_token_head - 1].token;
+            if((last_token[0] >= '0') && (last_token[0] <= '9') && (token.token[0] == '.')){
+                // Skip when the . is inside a number
+            }else{
+                is_blank = false;
+            }
+        }
+    }
+
     // If current token is non-blank, emit and return
     if(!is_blank) {
         aas->last_emission_time_ms = aas->current_time_ms;
@@ -342,8 +355,19 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
         aas_update_context(aas, (int64_t)max_idx);
 
         bool is_final = (aas->active_token_head >= (MAX_ACTIVE_TOKENS - 1));
+
+        // Force final if a new sentence has started
+        if(aas->active_token_head > 0) {
+            const char *last_token = aas->active_tokens[aas->active_token_head - 1].token;
+            if((last_token[1] == 0) && ((last_token[0] == '.') || (last_token[0] == '!') || (last_token[0] == '?'))){
+                if((token.flags & APRIL_TOKEN_FLAG_WORD_BOUNDARY_BIT) != 0){
+                    is_final = true;
+                }
+            }
+        }
+
         if(is_final) aas_finalize_previous_words(aas, &token);
-        
+
         is_final = (aas->active_token_head >= (MAX_ACTIVE_TOKENS - 1));
         if(is_final) {
             LOG_ERROR("No room left even after finalizing previous words");
@@ -364,7 +388,7 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
         bool reasonably_confident = (!is_equal_to_previous) && (max_val > (blank_val - 4.0f));
 
         bool been_long_silence = time_since_emission_ms >= 2200;
-        
+
         if (been_long_silence) {
             aas_finalize_tokens(aas);
             aas_clear_context(aas);
