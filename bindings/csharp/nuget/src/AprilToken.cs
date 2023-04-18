@@ -43,6 +43,12 @@ namespace AprilAsr
             get { return (_flags & 1) != 0; }
         }
 
+        /// <value>Whether or not this marks the end of a sentence</value>
+        public bool SentenceEnd
+        {
+            get { return (_flags & 2) != 0; }
+        }
+
         /// <value>
         /// The millisecond at which this was emitted. Counting is based on how much
         /// audio is being fed (time is not advanced when the session is not being
