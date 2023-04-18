@@ -108,7 +108,11 @@ typedef enum AprilResultType {
 typedef enum AprilTokenFlagBits {
     /* If set, this token marks the start of a new word. In English, this
        is equivalent to (token[0] == ' ') */
-    APRIL_TOKEN_FLAG_WORD_BOUNDARY_BIT = 0x00000001
+    APRIL_TOKEN_FLAG_WORD_BOUNDARY_BIT = 0x00000001,
+
+    /* If set, this token marks the end of a sentence, meaning the token is
+       equal to ".", "!", or "?". Some models may not have this token. */
+    APRIL_TOKEN_FLAG_SENTENCE_END_BIT = 0x00000002
 } AprilTokenFlagBits;
 
 typedef struct AprilToken {

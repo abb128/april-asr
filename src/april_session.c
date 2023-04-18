@@ -335,17 +335,24 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
     // different here for other languages like Chinese
     if (token.token[0] == ' ') token.flags |= APRIL_TOKEN_FLAG_WORD_BOUNDARY_BIT;
 
-    // Be more liberal with applying punctuation (might be just a model issue)
-    bool is_punct = (token.token[0] == '.') || (token.token[0] == ',') || (token.token[0] == '!') || (token.token[0] == '?');
-    if(is_punct && (!is_equal_to_previous) && (max_val > (blank_val - 3.5f))) {
-        if(aas->active_token_head > 0) {
-            const char *last_token = aas->active_tokens[aas->active_token_head - 1].token;
-            if((last_token[0] >= '0') && (last_token[0] <= '9') && (token.token[0] == '.')){
-                // Skip when the . is inside a number
-            }else{
-                is_blank = false;
-            }
+    bool is_single_character = token.token[1] == 0;
+    bool is_end_of_sentence = is_single_character && ( (token.token[0] == '.') || (token.token[0] == '!') || (token.token[0] == '?') );
+    bool is_punctuation = is_end_of_sentence || (is_single_character && (token.token[0] == ','));
+
+    // Don't treat the "." in a number (like 10.0) as punctuation or end of sentence
+    if(is_punctuation && (aas->active_token_head > 0)){
+        const char *last_token = aas->active_tokens[aas->active_token_head - 1].token;
+        if((last_token[0] >= '0') && (last_token[0] <= '9') && (token.token[0] == '.')){
+            is_end_of_sentence = false;
+            is_punctuation = false;
         }
+    }
+    
+    if(is_end_of_sentence) token.flags |= APRIL_TOKEN_FLAG_SENTENCE_END_BIT;
+
+    // Be more liberal with applying punctuation (might be just a model issue)
+    if(is_punctuation && (!is_equal_to_previous) && (max_val > (blank_val - 3.5f))) {
+        is_blank = false;
     }
 
     // If current token is non-blank, emit and return
