@@ -363,13 +363,25 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
 
         bool is_final = (aas->active_token_head >= (MAX_ACTIVE_TOKENS - 1));
 
-        // Force final if a new sentence has started
-        if(aas->active_token_head > 0) {
+        // Sentence boundary checks
+        if((aas->active_token_head > 0) && ((token.flags & APRIL_TOKEN_FLAG_WORD_BOUNDARY_BIT) != 0)) {
             const char *last_token = aas->active_tokens[aas->active_token_head - 1].token;
-            if((last_token[1] == 0) && ((last_token[0] == '.') || (last_token[0] == '!') || (last_token[0] == '?'))){
-                if((token.flags & APRIL_TOKEN_FLAG_WORD_BOUNDARY_BIT) != 0){
-                    is_final = true;
-                }
+            int last_token_flags = aas->active_tokens[aas->active_token_head - 1].flags;
+
+            bool last_token_single_character = last_token[1] == 0;
+            bool last_token_end_of_sentence = last_token_single_character && ( (last_token[0] == '.') || (last_token[0] == '!') || (last_token[0] == '?') );
+
+            // If this token is a word boundary, and the last character was supposed to be
+            // end of sentence, but wasn't treated as such because it came after a
+            // number, mark it as end of sentence (so "the number is 3. hi there"
+            // has the correct end of sentence token
+            if(last_token_end_of_sentence && ((last_token_flags & APRIL_TOKEN_FLAG_SENTENCE_END_BIT) == 0)){
+                aas->active_tokens[aas->active_token_head - 1].flags |= APRIL_TOKEN_FLAG_SENTENCE_END_BIT;
+            }
+            
+            // Force final if a new sentence has started
+            if(last_token_end_of_sentence){
+                is_final = true;
             }
         }
 
