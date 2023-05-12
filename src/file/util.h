@@ -23,6 +23,12 @@
 #define le32toh(x) x
 #define le64toh(x) x
 
+#elif __APPLE__
+
+// Assuming OSX is always little-endian
+#define le32toh(x) x
+#define le64toh(x) x
+
 #else
 #include <endian.h>
 #endif
