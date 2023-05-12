@@ -1,9 +1,13 @@
 cmake_minimum_required(VERSION 3.5)
 include(CheckIncludeFile)
+include(GNUInstallDirs)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-project(aprilasr)
+project(aprilasr
+        VERSION 2023.05.12
+        DESCRIPTION "aprilasr is a minimal library that provides an API for offline streaming speech-to-text applications"
+        HOMEPAGE_URL "https://github.com/abb128/april-asr")
 
 if(WIN32)
     set(CMAKE_SHARED_LIBRARY_PREFIX "lib")
@@ -107,6 +111,8 @@ set(april_sources
   src/sonic/sonic.c
 )
 
+file(GLOB_RECURSE april_headers "*.h")
+
 if(DEFINED USE_TINYCTHREAD)
     set(HAVE_C11_THREADS FALSE)
 else()
@@ -133,8 +139,24 @@ target_link_libraries(aprilasr_static ${onnx_link_libraries})
 add_library(aprilasr SHARED ${april_sources})
 target_link_libraries(aprilasr ${onnx_link_libraries})
 
+set_target_properties(aprilasr PROPERTIES PUBLIC_HEADER "${april_headers}")
+
 add_executable(main example.cpp)
 target_link_libraries(main PRIVATE aprilasr_static ${onnx_link_libraries})
 
 add_executable(srt example_srt.cpp)
 target_link_libraries(srt PRIVATE aprilasr_static ${onnx_link_libraries})
+
+install(TARGETS aprilasr
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME})
+
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}.pc.in ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pc
+  @ONLY
+)
+
+install(
+  FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pc
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig
+)
