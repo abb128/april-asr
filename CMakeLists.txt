@@ -127,6 +127,12 @@ if((NOT HAVE_C11_THREADS) OR (DEFINED USE_TINYCTHREAD))
     endif()
 endif()
 
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/share/pkgconfig/${PROJECT_NAME}.pc.in
+    ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pc
+    @ONLY
+)
+
 include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src ${ORT_INCLUDE_DIR})
 
 add_library(aprilasr_static STATIC ${april_sources})
@@ -140,3 +146,8 @@ target_link_libraries(main PRIVATE aprilasr_static ${onnx_link_libraries})
 
 add_executable(srt example_srt.cpp)
 target_link_libraries(srt PRIVATE aprilasr_static ${onnx_link_libraries})
+
+install(
+    FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pc
+    DESTINATION lib/pkgconfig
+)
