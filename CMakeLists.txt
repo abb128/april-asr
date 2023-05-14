@@ -4,6 +4,7 @@ include(CheckIncludeFile)
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(aprilasr
+        VERSION "0.1"
         DESCRIPTION "Speech-to-text library"
         HOMEPAGE_URL "https://github.com/abb128/april-asr")
 
