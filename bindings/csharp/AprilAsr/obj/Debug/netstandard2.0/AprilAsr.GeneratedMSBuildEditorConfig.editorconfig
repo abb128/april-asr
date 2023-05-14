@@ -1,0 +1,3 @@
+is_global = true
+build_property.RootNamespace = AprilAsr
+build_property.ProjectDir = /mnt/data/projects/github/zarlo/april-asr/bindings/csharp/AprilAsr/

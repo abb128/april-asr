@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <id>AprilAsr</id>
+        <version>0.0.1.6</version>
+        <authors>abb128</authors>
+        <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+        <projectUrl>https://abb128.github.io/april-asr/</projectUrl>
+        <title>April Speech Recognition</title>
+        <description>Offline realtime speech recognition</description>
+  </PropertyGroup>
+
+  <ItemGroup>
+      <None Include="../../../COPYING" Pack="true" PackagePath=""/>
+  </ItemGroup>
+
+  <Target Name="BeforeBuild">
+    <Exec Command="cp ..\..\..\build\Release\libaprilasr.dll .\build\lib\win-x64\" />
+    <Exec Command="cp ..\..\..\lib\lib\onnxruntime.dll .\build\lib\win-x64\" />
+  </Target>
+
+
+  <ItemGroup>
+    <NativeLibs Include="$(MSBuildThisFileDirectory)\lib\linux-x64\*.so" Condition="'$([MSBuild]::IsOsPlatform(Linux))'" />
+    <NativeLibs Include="$(MSBuildThisFileDirectory)\lib\win-x64\*.dll" Condition="'$([MSBuild]::IsOsPlatform(Windows))'" />
+    <None Include="@(NativeLibs)">
+      <Link>%(FileName)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>
