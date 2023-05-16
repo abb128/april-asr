@@ -41,18 +41,20 @@ const AprilConfig = StructType({
 const ext = process.platform === 'win32' ? 'dll' : 'so';
 
 // Load the shared library
-const libName = 'libaprilasr.' + ext;
+const libName = 'onnxruntime.' + ext;
+const libAprilName = 'libaprilasr.' + ext;
 
-const pathLib = process.env.ONNX_ROOT ? process.env.ONNX_ROOT : path.join(__dirname, '..', 'Release');
+const pathLib = process.env.ONNX_ROOT ? process.env.ONNX_ROOT : process.cwd();
+const pathAprilLib = process.env.APRIL_ASR_ROOT ? process.env.APRIL_ASR_ROOT : process.cwd();
 
 new ffi.DynamicLibrary(
-  path.join(pathLib, 'onnxruntime.' + ext),
+  path.join(pathLib, libName),
   ffi.DynamicLibrary.FLAGS.RTLD_NOW | ffi.DynamicLibrary.FLAGS.RTLD_GLOBAL
 );
 
 const aprilLib = ffi.Library(
   new ffi.DynamicLibrary(
-    path.join(pathLib, libName),
+    path.join(pathAprilLib, libAprilName),
     ffi.DynamicLibrary.FLAGS.RTLD_NOW | ffi.DynamicLibrary.FLAGS.RTLD_GLOBAL
   ), {
     aam_api_init: ['void', ['int']],
