@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using AprilAsr;
 
@@ -77,6 +78,7 @@ namespace AprilAsr.PINVOKE {
         }
 
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static string PtrToStringUTF8(System.IntPtr ptr)
         {
 #if NETSTANDARD2_0
