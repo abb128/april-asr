@@ -152,3 +152,17 @@ install(
     FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pc
     DESTINATION lib/pkgconfig
 )
+
+install(TARGETS main DESTINATION bin)
+install(TARGETS srt DESTINATION bin)
+install(TARGETS aprilasr DESTINATION lib)
+
+install(
+    FILES ${CMAKE_CURRENT_SOURCE_DIR}/april_api.h
+    DESTINATION include/${PROJECT_NAME}/
+)
+
+install(
+    FILES ${CMAKE_CURRENT_SOURCE_DIR}/COPYING
+    DESTINATION share/license
+)
