@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <RestoreSources>$(RestoreSources);../nuget</RestoreSources>
+    <RestoreSources>$(RestoreSources);../AprilAsr/bin/Debug</RestoreSources>
   </PropertyGroup>
 
   <ItemGroup>

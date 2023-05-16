@@ -16,15 +16,33 @@
       <None Include="../../../COPYING" Pack="true" PackagePath=""/>
   </ItemGroup>
 
-  <Target Name="BeforeBuild">
-    <Exec Command="cp ..\..\..\build\Release\libaprilasr.dll .\build\lib\win-x64\" />
-    <Exec Command="cp ..\..\..\lib\lib\onnxruntime.dll .\build\lib\win-x64\" />
+  <Target Name="copy" BeforeTargets="Build">
+    <Copy
+        SourceFiles="$(MSBuildThisFileDirectory)/../../../build/Release/libaprilasr.dll"
+        DestinationFolder="$(MSBuildThisFileDirectory)/build/lib/win-x64/"
+        ContinueOnError="true"
+    />
+    <Copy
+        SourceFiles="$(MSBuildThisFileDirectory)/../../../build/build/onnxruntime.dll"
+        DestinationFolder="$(MSBuildThisFileDirectory)/build/lib/win-x64/"
+        ContinueOnError="true"
+    />
+    <Copy
+        SourceFiles="$(MSBuildThisFileDirectory)/../../../build/Release/libaprilasr.so"
+        DestinationFolder="$(MSBuildThisFileDirectory)/build/lib/linux-x64/"
+        ContinueOnError="true"
+    />
+    <Copy
+        SourceFiles="$(MSBuildThisFileDirectory)/../../../lib/lib/*.so"
+        DestinationFolder="$(MSBuildThisFileDirectory)/build/lib/linux-x64/"
+        ContinueOnError="true"
+    />
   </Target>
 
 
   <ItemGroup>
-    <NativeLibs Include="$(MSBuildThisFileDirectory)\lib\linux-x64\*.so" Condition="'$([MSBuild]::IsOsPlatform(Linux))'" />
-    <NativeLibs Include="$(MSBuildThisFileDirectory)\lib\win-x64\*.dll" Condition="'$([MSBuild]::IsOsPlatform(Windows))'" />
+    <NativeLibs Include="$(MSBuildThisFileDirectory)\lib\linux-x64\*.so" />
+    <NativeLibs Include="$(MSBuildThisFileDirectory)\lib\win-x64\*.dll" />
     <None Include="@(NativeLibs)">
       <Link>%(FileName)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
