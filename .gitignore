@@ -18,3 +18,5 @@ bindings/python/build
 bindings/python/dist
 april-docs/src/csharp/html
 april-docs/src/april_asr
+/result
+/result-dev
