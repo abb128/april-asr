@@ -41,8 +41,8 @@
 
 
   <ItemGroup>
-    <NativeLibs Include="$(MSBuildThisFileDirectory)\lib\linux-x64\*.so" />
-    <NativeLibs Include="$(MSBuildThisFileDirectory)\lib\win-x64\*.dll" />
+    <NativeLibs Include="$(MSBuildThisFileDirectory)\build\lib\linux-x64\*.so" />
+    <NativeLibs Include="$(MSBuildThisFileDirectory)\build\lib\win-x64\*.dll" />
     <None Include="@(NativeLibs)">
       <Link>%(FileName)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
