@@ -34,41 +34,55 @@ namespace AprilAsr.PINVOKE {
         public int flags;
     }
 
+
     internal class AprilAsrPINVOKE
     {
+        [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
         [DllImport("libaprilasr", EntryPoint="aam_api_init", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void aam_api_init(int version);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
         [DllImport("libaprilasr", EntryPoint="aam_create_model", CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr aam_create_model(string path);
 
+
+        [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
         [DllImport("libaprilasr", EntryPoint="aam_get_name", CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr aam_get_name(IntPtr handle);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
         [DllImport("libaprilasr", EntryPoint="aam_get_description", CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr aam_get_description(IntPtr handle);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
         [DllImport("libaprilasr", EntryPoint="aam_get_language", CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr aam_get_language(IntPtr handle);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
         [DllImport("libaprilasr", EntryPoint="aam_get_sample_rate", CallingConvention = CallingConvention.Cdecl)]
         internal static extern int aam_get_sample_rate(IntPtr handle);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
         [DllImport("libaprilasr", EntryPoint="aam_free", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void aam_free(IntPtr handle);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
         [DllImport("libaprilasr", EntryPoint="aas_create_session", CallingConvention = CallingConvention.Cdecl)]
         internal static extern IntPtr aas_create_session(IntPtr model, AprilConfig config);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
         [DllImport("libaprilasr", EntryPoint="aas_feed_pcm16", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void aas_feed_pcm16(IntPtr session, short[] samples, int num_samples);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
         [DllImport("libaprilasr", EntryPoint="aas_flush", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void aas_flush(IntPtr session);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
         [DllImport("libaprilasr", EntryPoint="aas_realtime_get_speedup", CallingConvention = CallingConvention.Cdecl)]
         internal static extern float aas_realtime_get_speedup(IntPtr session);
 
+        [DefaultDllImportSearchPaths(DllImportSearchPath.SafeDirectories)]
         [DllImport("libaprilasr", EntryPoint="aas_free", CallingConvention=CallingConvention.Cdecl)]
         internal static extern void aas_free(IntPtr session);
 
