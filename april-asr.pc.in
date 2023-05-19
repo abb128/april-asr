@@ -8,4 +8,4 @@ URL: @PROJECT_HOMEPAGE_URL@
 Version: @PROJECT_VERSION@
 Requires:
 Cflags: -I"${includedir}"
-Libs: -L"${libdir}" -l@PROJECT_NAME@
+Libs: -L"${libdir}" -l@PROJECT_NAME_SO@
