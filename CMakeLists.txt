@@ -141,6 +141,8 @@ target_link_libraries(aprilasr_static ${onnx_link_libraries})
 add_library(aprilasr SHARED ${april_sources})
 target_link_libraries(aprilasr ${onnx_link_libraries})
 
+set_target_properties(aprilasr PROPERTIES VERSION ${CMAKE_PROJECT_VERSION}
+SOVERSION ${PROJECT_VERSION_MAJOR} )
 set_target_properties(aprilasr PROPERTIES PUBLIC_HEADER "${april_headers}")
 
 add_executable(main example.cpp)
