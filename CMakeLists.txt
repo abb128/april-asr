@@ -4,10 +4,12 @@ include(GNUInstallDirs)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-project(aprilasr
+project(april-asr
         VERSION 2023.05.12
         DESCRIPTION "aprilasr is a minimal library that provides an API for offline streaming speech-to-text applications"
         HOMEPAGE_URL "https://github.com/abb128/april-asr")
+
+string(REPLACE "-" "" PROJECT_NAME_SO ${PROJECT_NAME})
 
 if(WIN32)
     set(CMAKE_SHARED_LIBRARY_PREFIX "lib")
@@ -160,5 +162,5 @@ configure_file(
 
 install(
   FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.pc
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/lib/pkgconfig
+  DESTINATION lib/pkgconfig
 )
