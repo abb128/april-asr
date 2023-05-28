@@ -31,9 +31,9 @@ if (NOT DEFINED ENV{ONNX_STATIC_ROOT})
     message(FATAL_ERROR "Could not find ONNXRuntime")
   endif()
 
-  set(onnx_link_libraries ONNXRuntime::ONNXRuntime)
+  set(april_link_libraries ONNXRuntime::ONNXRuntime)
 else()
-  set(onnx_link_libraries
+  set(april_link_libraries
     $ENV{ONNX_STATIC_ROOT}/libonnxruntime_session.a
     $ENV{ONNX_STATIC_ROOT}/libonnxruntime_optimizer.a
     $ENV{ONNX_STATIC_ROOT}/libonnxruntime_providers.a
@@ -126,30 +126,29 @@ if((NOT HAVE_C11_THREADS) OR (DEFINED USE_TINYCTHREAD))
       src/tinycthread/tinycthread.c)
     
     add_compile_definitions(USE_TINYCTHREAD)
+endif()
 
-
-    if(NOT WIN32)
-      list(APPEND onnx_link_libraries "pthread")
-    endif()
+if(NOT WIN32)
+  list(APPEND april_link_libraries "pthread")
 endif()
 
 include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src ${ORT_INCLUDE_DIR})
 
 add_library(aprilasr_static STATIC ${april_sources})
-target_link_libraries(aprilasr_static ${onnx_link_libraries})
+target_link_libraries(aprilasr_static ${april_link_libraries})
 
 add_library(aprilasr SHARED ${april_sources})
-target_link_libraries(aprilasr ${onnx_link_libraries})
+target_link_libraries(aprilasr ${april_link_libraries})
 
 set_target_properties(aprilasr PROPERTIES VERSION ${CMAKE_PROJECT_VERSION}
 SOVERSION ${PROJECT_VERSION_MAJOR} )
 set_target_properties(aprilasr PROPERTIES PUBLIC_HEADER "${april_headers}")
 
 add_executable(main example.cpp)
-target_link_libraries(main PRIVATE aprilasr_static ${onnx_link_libraries})
+target_link_libraries(main PRIVATE aprilasr_static ${april_link_libraries})
 
 add_executable(srt example_srt.cpp)
-target_link_libraries(srt PRIVATE aprilasr_static ${onnx_link_libraries})
+target_link_libraries(srt PRIVATE aprilasr_static ${april_link_libraries})
 
 install(TARGETS aprilasr
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
