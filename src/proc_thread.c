@@ -108,10 +108,17 @@ void pt_terminate(ProcThread thread) {
 void pt_free(ProcThread thread) {
     if(thread == NULL) return;
     
-    pt_terminate(thread);
+    if((thread->thrd != NULL) && (thread->mutex != NULL)){
+        pt_terminate(thread);
+    }
 
-    mtx_destroy(&thread->mutex);
-    cnd_destroy(&thread->cond);
+    if(thread->mutex != NULL){
+        mtx_destroy(&thread->mutex);
+    }
+
+    if(thread->cond != NULL){
+        cnd_destroy(&thread->cond);
+    }
 
     free(thread);
 }
