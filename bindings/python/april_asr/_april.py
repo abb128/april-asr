@@ -54,7 +54,7 @@ class Token:
         self.logprob = token.logprob
         self.word_boundary = (token.flags.value & 1) != 0
         self.sentence_end = (token.flags.value & 2) != 0
-        self.time = float(token.time) / 1000.0
+        self.time = float(token.time_ms) / 1000.0
 
 class Model:
     """
