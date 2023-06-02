@@ -33,9 +33,13 @@ struct ProcThread_i {
     volatile bool terminating;
     volatile int flags;
 
+    bool thrd_init;
     thrd_t thrd;
 
+    bool cond_init;
     cnd_t cond;
+
+    bool mutex_init;
     mtx_t mutex;
 
     ProcThreadCallback callback;
@@ -54,18 +58,24 @@ ProcThread pt_create(ProcThreadCallback callback, void *userdata) {
         LOG_WARNING("Failed to initialize cnd_t");
         pt_free(thread);
         return NULL;
+    }else{
+        thread->cond_init = true;
     }
 
     if(mtx_init(&thread->mutex, mtx_plain) != thrd_success){
         LOG_WARNING("Failed to initialize mutex");
         pt_free(thread);
         return NULL;
+    }else{
+        thread->mutex_init = true;
     }
 
     if(thrd_create(&thread->thrd, run_pt, thread) != thrd_success) {
         LOG_WARNING("Failed to start thread");
         pt_free(thread);
         return NULL;
+    }else{
+        thread->thrd_init = true;
     }
 
     return thread;
@@ -108,10 +118,17 @@ void pt_terminate(ProcThread thread) {
 void pt_free(ProcThread thread) {
     if(thread == NULL) return;
     
-    pt_terminate(thread);
+    if(thread->thrd_init && thread->mutex_init && thread->cond_init){
+        pt_terminate(thread);
+    }
 
-    mtx_destroy(&thread->mutex);
-    cnd_destroy(&thread->cond);
+    if(thread->mutex_init){
+        mtx_destroy(&thread->mutex);
+    }
+
+    if(thread->cond_init){
+        cnd_destroy(&thread->cond);
+    }
 
     free(thread);
 }
