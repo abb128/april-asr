@@ -5,6 +5,7 @@ use std::path::PathBuf;
 fn main() {
     // Tell cargo to look for shared libraries in the specified directory
     println!("cargo:rustc-link-search=../../../lib/lib/");
+    println!("cargo:rustc-link-search=../../../build/");
     println!("cargo:rustc-link-lib=aprilasr");
     println!("cargo:rerun-if-changed=../../../april_api.h");
 
@@ -24,7 +25,7 @@ fn main() {
         .expect("Unable to generate bindings");
 
     // Write the bindings to the $OUT_DIR/bindings.rs file.
-    let out_path = PathBuf::from("./src/bindings.rs");
+    let out_path = PathBuf::from("./src/bindgen_bindings.rs");
     bindings
         .write_to_file(out_path)
         .expect("Couldn't write bindings!");
