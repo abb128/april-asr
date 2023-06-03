@@ -4,10 +4,10 @@ use std::path::PathBuf;
 
 fn main() {
     // Tell cargo to look for shared libraries in the specified directory
-    println!("cargo:rustc-link-search=../../../lib/lib/");
-    println!("cargo:rustc-link-search=../../../build/");
+    println!("cargo:rustc-link-search=../../lib/lib/");
+    println!("cargo:rustc-link-search=../../build/");
     println!("cargo:rustc-link-lib=aprilasr");
-    println!("cargo:rerun-if-changed=../../../april_api.h");
+    println!("cargo:rerun-if-changed=../../april_api.h");
 
     // The bindgen::Builder is the main entry point
     // to bindgen, and lets you build up options for
@@ -15,7 +15,7 @@ fn main() {
     let bindings = bindgen::Builder::default()
         // The input header we would like to generate
         // bindings for.
-        .header("../../../april_api.h")
+        .header("../../april_api.h")
         // Tell cargo to invalidate the built crate whenever any of the
         // included header files changed.
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
