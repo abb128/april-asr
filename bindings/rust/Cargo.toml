@@ -1,7 +1,13 @@
 [package]
 name = "april_asr"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
+license = "GPL-3.0"
+email = "fdenzell@gmail.com"
+authors = ["fastfists", "abb128"]
+documentation = "https://docs.rs/april_asr"
+repository = "https://github.com/abb128/april-asr"
+description = "Offline open source speech recognition API based on next-generation Kaldi"
 
 [dependencies]
 libc = "0.2.144"
