@@ -1,11 +1,13 @@
 extern crate bindgen;
 
-use std::path::PathBuf;
+use std::{
+    env, fs,
+    path::{PathBuf}, io,
+};
 
 fn main() {
     // Tell cargo to look for shared libraries in the specified directory
-    println!("cargo:rustc-link-search=../../lib/lib/");
-    println!("cargo:rustc-link-search=../../build/");
+    copy_shared_objects().expect("Failed to copy shared objects to target directory");
     println!("cargo:rustc-link-lib=aprilasr");
     println!("cargo:rerun-if-changed=../../april_api.h");
 
@@ -29,4 +31,22 @@ fn main() {
     bindings
         .write_to_file(out_path)
         .expect("Couldn't write bindings!");
+}
+
+fn copy_shared_objects() -> io::Result<()> {
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    println!("cargo:rustc-link-search={}", out_dir.display());
+
+    let libonnxfile = out_dir.join("libonnxruntime.so");
+    let libaprilfile = out_dir.join("libaprilasr.so");
+    let libapril2023file = out_dir.join("libaprilasr.so.2023");
+
+    println!("cargo:rerun-if-changed=../../lib/lib/libonnxruntime.so");
+    println!("cargo:rerun-if-changed=../../build/libaprilasr.so");
+    println!("cargo:rerun-if-changed=../../build/libaprilasr.so.2023");
+
+    fs::copy("../../lib/lib/libonnxruntime.so", libonnxfile)?;
+    fs::copy("../../build/libaprilasr.so.2023", libaprilfile)?;
+    fs::copy("../../build/libaprilasr.so", libapril2023file)?;
+    Ok(())
 }
