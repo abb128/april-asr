@@ -1,6 +1,6 @@
 [package]
 name = "april_asr"
-version = "0.1.2"
+version = "0.1.21-dev1"
 edition = "2021"
 license = "GPL-3.0"
 email = "fdenzell@gmail.com"

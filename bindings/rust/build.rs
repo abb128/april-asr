@@ -6,8 +6,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
-const APRIL_RELEASE_URL: &str = "https://github.com/arguflow/april-asr/releases/download/v-0.0.1/libaprilasr.so";
-const ONNX_RELEASE_URL: &str = "https://github.com/microsoft/onnxruntime/releases/download/v1.13.1/onnxruntime-linux-x64-1.13.1.tgz";
+const APRIL_RELEASE_URL: &str = "http://github.com/arguflow/april-asr/releases/download/v-0.0.1/libaprilasr.so";
+const ONNX_RELEASE_URL: &str = "http://github.com/microsoft/onnxruntime/releases/download/v1.13.1/onnxruntime-linux-x64-1.13.1.tgz";
 
 fn main() {
     // Tell cargo to look for shared libraries in the specified directory
