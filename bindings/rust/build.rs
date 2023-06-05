@@ -9,6 +9,12 @@ use std::{
 const APRIL_RELEASE_URL: &str = "http://github.com/arguflow/april-asr/releases/download/v-0.0.1/libaprilasr.so";
 const ONNX_RELEASE_URL: &str = "http://github.com/microsoft/onnxruntime/releases/download/v1.13.1/onnxruntime-linux-x64-1.13.1.tgz";
 
+#[cfg(feature = "disable-sys-build-script")]
+fn main() {
+    println!("Build script disabled!");
+}
+
+#[cfg(not(feature = "disable-sys-build-script"))]
 fn main() {
     // Tell cargo to look for shared libraries in the specified directory
     copy_shared_objects().expect("Failed to copy shared objects to target directory");
