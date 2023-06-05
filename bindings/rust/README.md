@@ -7,7 +7,7 @@ From its [GitHub page](https://github.com/abb128/april-asr):
 
 Reading a WAV file and feeding it to the APRIL-ASR model:
 
-```
+```rust
 use april_asr::{Model, Session, Result, AprilResult};
 use std::io::Read;
 
