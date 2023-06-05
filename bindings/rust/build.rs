@@ -6,7 +6,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
-const RELEASE_BASE_URL: &str = "https://github.com/arguflow/april-asr/releases/download/v-0.0.1/";
+const APRIL_RELEASE_URL: &str = "https://github.com/arguflow/april-asr/releases/download/v-0.0.1/libaprilasr.so";
+const ONNX_RELEASE_URL: &str = "https://github.com/microsoft/onnxruntime/releases/download/v1.13.1/onnxruntime-linux-x64-1.13.1.tgz";
 
 fn main() {
     // Tell cargo to look for shared libraries in the specified directory
@@ -36,7 +37,7 @@ fn main() {
         .expect("Couldn't write bindings!");
 }
 
-fn download_file<P>(url: String, target_file: P)
+fn download_file<P>(url: String, target_file: &P)
 where
     P: AsRef<Path>,
 {
@@ -56,7 +57,7 @@ where
     assert_eq!(buffer.len(), len);
     assert_eq!(buffer.len(), read_len);
 
-    let f = fs::File::create(&target_file).unwrap();
+    let f = fs::File::create(target_file).unwrap();
     let mut writer = io::BufWriter::new(f);
     writer.write_all(&buffer).unwrap();
 }
@@ -65,27 +66,36 @@ fn copy_shared_objects() -> io::Result<()> {
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
     println!("cargo:rustc-link-search={}", out_dir.display());
 
-    let libonnxfile = out_dir.join("libonnxruntime.so");
+    let libonnxfilezip = out_dir.join("libonnxruntime.tgz");
     let libaprilfile = out_dir.join("libaprilasr.so");
     let libapril2023file = out_dir.join("libaprilasr.so.2023");
 
-    if libonnxfile.as_path().exists()
+    if libonnxfilezip.as_path().exists()
         && libaprilfile.as_path().exists()
         && libapril2023file.as_path().exists()
     {
         return Ok(());
     }
 
-    format!("{}{}", RELEASE_BASE_URL, "libonnxruntime.so");
     download_file(
-        format!("{}{}", RELEASE_BASE_URL, "libonnxruntime.so"),
-        libonnxfile,
+        ONNX_RELEASE_URL.to_string(),
+        &libonnxfilezip,
     );
+    extract_tgz(&libonnxfilezip, out_dir.as_path());
     download_file(
-        format!("{}{}", RELEASE_BASE_URL, "libaprilasr.so"),
-        libaprilfile.clone(),
+        APRIL_RELEASE_URL.to_string(),
+        &libaprilfile,
     );
     fs::copy(libaprilfile, libapril2023file)?;
 
     Ok(())
 }
+
+fn extract_tgz(filename: &Path, output: &Path) {
+    let file = fs::File::open(filename).unwrap();
+    let buf = io::BufReader::new(file);
+    let tar = flate2::read::GzDecoder::new(buf);
+    let mut archive = tar::Archive::new(tar);
+    archive.unpack(output).unwrap();
+}
+
