@@ -14,4 +14,6 @@ libc = "0.2.144"
 
 [build-dependencies]
 bindgen = "0.65.1"
+flate2 = "1.0.26"
+tar = "0.4.38"
 ureq = "2.6.2"
