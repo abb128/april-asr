@@ -67,25 +67,27 @@ fn copy_shared_objects() -> io::Result<()> {
     println!("cargo:rustc-link-search={}", out_dir.display());
 
     let libonnxfilezip = out_dir.join("libonnxruntime.tgz");
+    let libonnxfile = out_dir.join("libonnxruntime.so");
     let libaprilfile = out_dir.join("libaprilasr.so");
     let libapril2023file = out_dir.join("libaprilasr.so.2023");
 
-    if libonnxfilezip.as_path().exists()
-        && libaprilfile.as_path().exists()
-        && libapril2023file.as_path().exists()
-    {
-        return Ok(());
+    if !libonnxfilezip.as_path().exists() {
+        download_file(
+            ONNX_RELEASE_URL.to_string(),
+            &libonnxfilezip,
+        );
     }
 
-    download_file(
-        ONNX_RELEASE_URL.to_string(),
-        &libonnxfilezip,
-    );
-    extract_tgz(&libonnxfilezip, out_dir.as_path());
-    download_file(
-        APRIL_RELEASE_URL.to_string(),
-        &libaprilfile,
-    );
+    if !libonnxfile.as_path().exists() {
+        extract_tgz(&libonnxfilezip, out_dir.as_path());
+    }
+
+    if !libaprilfile.as_path().exists() {
+        download_file(
+            APRIL_RELEASE_URL.to_string(),
+            &libaprilfile,
+        );
+    }
     fs::copy(libaprilfile, libapril2023file)?;
 
     Ok(())
