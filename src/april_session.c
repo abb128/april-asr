@@ -319,6 +319,8 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
         }
     }
 
+    bool was_context_cleared = aas->context.data[1] == aas->model->params.blank_id;
+
     // If the current token is equal to previous, ignore early_emit.
     // Helps prevent repeating like ALUMUMUMUMUMUININININIUM which happens for some reason
     bool is_equal_to_previous = aas->context.data[1] == max_idx;
@@ -351,7 +353,7 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
     if(is_end_of_sentence) token.flags |= APRIL_TOKEN_FLAG_SENTENCE_END_BIT;
 
     // Be more liberal with applying punctuation (might be just a model issue)
-    if(is_punctuation && (!is_equal_to_previous) && (max_val > (blank_val - 3.5f))) {
+    if((!was_context_cleared) && is_punctuation && (!is_equal_to_previous) && (max_val > (blank_val - 3.5f))) {
         is_blank = false;
     }
 
