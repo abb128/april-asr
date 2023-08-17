@@ -82,7 +82,7 @@ namespace AprilAsr
         public AprilSession(AprilModel model, SessionCallback callback, bool async = false, bool noRT = false, string speakerName = "") {
             this.model = model;
             this.callback = callback;
-            this.handler = new AprilRecognitionResultHandler(this.handleAprilCallback)
+            this.handler = new AprilRecognitionResultHandler(this.handleAprilCallback);
 
             AprilConfig config = new AprilConfig();
             config.handler = this.handler;
