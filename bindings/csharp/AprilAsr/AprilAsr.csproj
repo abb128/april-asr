@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard2.0;netstandard2.1</TargetFrameworks>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <id>AprilAsr</id>
+        <version>0.0.1.6</version>
+        <authors>abb128</authors>
+        <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+        <projectUrl>https://abb128.github.io/april-asr/</projectUrl>
+        <title>April Speech Recognition</title>
+        <description>Offline realtime speech recognition</description>
+  </PropertyGroup>
+
+  <ItemGroup>
+      <None Include="../../../COPYING" Pack="true" PackagePath=""/>
+  </ItemGroup>
+
+  <Target Name="copy" BeforeTargets="Build">
+    <Copy
+        SourceFiles="$(MSBuildThisFileDirectory)../../../build/Release/libaprilasr.dll"
+        DestinationFolder="$(MSBuildThisFileDirectory)build/lib/win-x64/"
+        ContinueOnError="true"
+    />
+    <Copy
+        SourceFiles="$(MSBuildThisFileDirectory)../../../build/build/onnxruntime.dll"
+        DestinationFolder="$(MSBuildThisFileDirectory)build/lib/win-x64/"
+        ContinueOnError="true"
+    />
+    <Copy
+        SourceFiles="$(MSBuildThisFileDirectory)../../../build/Release/libaprilasr.so"
+        DestinationFolder="$(MSBuildThisFileDirectory)build/lib/linux-x64/"
+        ContinueOnError="true"
+    />
+    <Copy
+        SourceFiles="$(MSBuildThisFileDirectory)../../../lib/lib/*.so"
+        DestinationFolder="$(MSBuildThisFileDirectory)build/lib/linux-x64/"
+        ContinueOnError="true"
+    />
+  </Target>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)\build\lib\win-x64\*.dll" Pack="true" PackagePath="runtimes/win-x64/native" />
+    <None Include="$(MSBuildThisFileDirectory)\build\lib\linux-x64\*.so" Pack="true" PackagePath="runtimes/linux-x64/native" />
+  </ItemGroup>
+
+</Project>

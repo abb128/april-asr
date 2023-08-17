@@ -89,7 +89,8 @@ namespace AprilAsr
             else if(async) config.flags = 1;
             else config.flags = 0;
 
-            if(speakerName.Length > 0){
+            if(string.IsNullOrWhiteSpace(speakerName))
+            {
                 int hash = speakerName.GetHashCode();
                 
                 config.speaker.data[0] = (byte)(hash >> 24);

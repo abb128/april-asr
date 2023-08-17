@@ -129,56 +129,53 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
 
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
           submodules: recursive
       
-      - name: Install apt packages
-        uses: awalsh128/cache-apt-pkgs-action@v1.2.4
-        with:
-          packages: mono-mcs nuget
-
       - name: Download Linux aprilasr
         uses: actions/download-artifact@master
         with:
           name: libaprilasr.so
-          path: ${{github.workspace}}/bindings/csharp/nuget/build/lib/linux-x64/
+          path: ${{github.workspace}}/bindings/csharp/AprilAsr/build/lib/linux-x64/
 
       - name: Download Linux onnxruntime
         uses: actions/download-artifact@master
         with:
           name: libonnxruntime.so
-          path: ${{github.workspace}}/bindings/csharp/nuget/build/lib/linux-x64/
+          path: ${{github.workspace}}/bindings/csharp/AprilAsr/build/lib/linux-x64/
 
       - name: Download Windows aprilasr
         uses: actions/download-artifact@master
         with:
           name: libaprilasr.dll
-          path: ${{github.workspace}}/bindings/csharp/nuget/build/lib/win-x64/
+          path: ${{github.workspace}}/bindings/csharp/AprilAsr/build/lib/win-x64/
 
       - name: Download Windows onnxruntime
         uses: actions/download-artifact@master
         with:
           name: onnxruntime.dll
-          path: ${{github.workspace}}/bindings/csharp/nuget/build/lib/win-x64/
+          path: ${{github.workspace}}/bindings/csharp/AprilAsr/build/lib/win-x64/
 
       - name: Display structure of downloaded files
         run: ls -R
-        working-directory: ${{github.workspace}}/bindings/csharp/nuget/build/lib
+        working-directory: ${{github.workspace}}/bindings/csharp/AprilAsr/build/lib
+      
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v1
       
       - name: Build C# bindings
-        working-directory: ${{github.workspace}}/bindings/csharp/nuget
-        run: mcs -out:lib/netstandard2.0/AprilAsr.dll -target:library src/*.cs
+        working-directory: ${{github.workspace}}/bindings/csharp/AprilAsr
+        run: dotnet build -c Release
       
       - name: Run nuget pack
-        working-directory:  ${{github.workspace}}/bindings/csharp/nuget
-        run: mkdir out && nuget pack -Verbosity detailed -OutputDirectory out
+        working-directory:  ${{github.workspace}}/bindings/csharp/AprilAsr
+        run: mkdir out && dotnet pack -c Release --no-build --output out
       
       - name: Upload nupkg
         uses: actions/upload-artifact@v3.1.0
         with:
           name: nupkg
-          path: ${{github.workspace}}/bindings/csharp/nuget/out
+          path: ${{github.workspace}}/bindings/csharp/AprilAsr/out
