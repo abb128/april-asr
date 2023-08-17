@@ -2,7 +2,7 @@
 <package>
   <metadata>
     <id>AprilAsr</id>
-    <version>0.0.1.6</version>
+    <version>0.0.1.7</version>
     <authors>abb128</authors>
     <license type="expression">GPL-3.0-only</license>
     <projectUrl>https://abb128.github.io/april-asr/</projectUrl>
