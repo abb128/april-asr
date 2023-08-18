@@ -50,6 +50,7 @@ namespace AprilAsr
         private IntPtr handle;
         private AprilModel model;
         private SessionCallback callback;
+        private AprilRecognitionResultHandler handler;
 
         private void handleAprilCallback(
             IntPtr userdata,
@@ -81,9 +82,10 @@ namespace AprilAsr
         public AprilSession(AprilModel model, SessionCallback callback, bool async = false, bool noRT = false, string speakerName = "") {
             this.model = model;
             this.callback = callback;
+            this.handler = new AprilRecognitionResultHandler(this.handleAprilCallback);
 
             AprilConfig config = new AprilConfig();
-            config.handler = this.handleAprilCallback;
+            config.handler = this.handler;
 
             if(async && noRT) config.flags = 2;
             else if(async) config.flags = 1;
