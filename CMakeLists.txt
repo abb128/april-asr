@@ -130,6 +130,7 @@ endif()
 
 if(NOT WIN32)
   list(APPEND april_link_libraries "pthread")
+  list(APPEND april_link_libraries "m")
 endif()
 
 include_directories(${PROJECT_SOURCE_DIR} ${PROJECT_SOURCE_DIR}/src ${ORT_INCLUDE_DIR})
