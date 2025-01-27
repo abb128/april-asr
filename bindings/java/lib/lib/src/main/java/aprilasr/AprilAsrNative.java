@@ -61,9 +61,6 @@ public class AprilAsrNative {
                 File tmpFile = Native.extractFromResourcePath("/win32-x86-64/empty", AprilAsrNative.class.getClassLoader());
                 File tmpDir = tmpFile.getParentFile();
                 new File(tmpDir, tmpFile.getName() + ".x").createNewFile();
-
-                // Now unpack dependencies
-                unpackDll(tmpDir, "onnxruntime");
             } catch (IOException e) {
                 // Nothing for now, it will fail on next step
             } finally {

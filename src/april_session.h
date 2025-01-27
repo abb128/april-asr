@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 abb128
+ * Copyright (C) 2025 abb128
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,11 +19,11 @@
 
 #include "common.h"
 #include <stdbool.h>
-#include "ort_util.h"
 #include "april_model.h"
 #include "april_api.h"
 #include "fbank.h"
 
+#include "model_impl.h"
 #include "audio_provider.h"
 #include "proc_thread.h"
 
@@ -33,43 +33,31 @@ struct AprilASRSession_i {
     AprilASRModel model;
     OnlineFBank fbank;
 
-    OrtMemoryInfo *memory_info;
-
-    TensorF x;
-
-    bool hc_use_0;
-    TensorF h[2];
-    TensorF c[2];
-
-    TensorF eout;
-
-    size_t context_size;
-    TensorI context;
-    TensorF dout;
-    bool dout_init;
-
-    TensorF logits;
-
     AprilToken active_tokens[MAX_ACTIVE_TOKENS];
     size_t active_token_head;
-    size_t last_handler_call_head;
+
+    struct april_model_tensors tensors;
+
+    size_t context_size;
 
     bool emitted_silence;
     bool was_flushed;
 
     bool sync;
     bool force_realtime;
+
     AudioProvider provider;
-    ProcThread thread;
 
     size_t current_time_ms;
     size_t last_emission_time_ms;
+    size_t last_handler_call_head;
 
+    // set by user
     AprilRecognitionResultHandler handler;
     void *userdata;
-
-    size_t time_since_update_speed;
-    double speed_needed;
 };
+
+int aas_run_self_pt_tasks(AprilASRSession sess);
+bool aas_process_logits(AprilASRSession aas, float early_emit);
 
 #endif

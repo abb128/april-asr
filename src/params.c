@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 abb128
+ * Copyright (C) 2025 abb128
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@
 
 #define ASSERT_OR_RETURN_FALSE(expr) if(!(expr)) { LOG_WARNING("Params: assertion " #expr " failed, line %d", __LINE__); return false; }
 
-char *get_token(ModelParameters *params, size_t token_index){
+const char *get_token(ModelParameters *params, size_t token_index){
     return &params->tokens[params->token_length * token_index];
 }
 
