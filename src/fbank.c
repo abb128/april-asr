@@ -185,6 +185,7 @@ void fbank_accept_waveform(OnlineFBank fbank, float *wave, size_t wave_count) {
         sonicReadFloatFromStream(fbank->sonic_stream, wave, wave_count);
     }
 
+    float preemph_coeff = fbank->opts.preemph_coeff;
     for(ssize_t i=0;; i++) {
         if((fbank->temp_segment_avail + 1) > fbank->temp_segments_y){
             LOG_WARNING("fbank ran out of space. Please call fbank_pull_segments. Can't eat wave");
@@ -228,11 +229,32 @@ void fbank_accept_waveform(OnlineFBank fbank, float *wave, size_t wave_count) {
             ssize_t wave_idx = start_idx + j;
             if(wave_idx < 0){
                 ssize_t ll_idx = fbank->prev_leftover_count + wave_idx;
-                fbank->data[j] = fbank->prev_leftover[ll_idx] * fbank->window[j];
+                fbank->data[j] = fbank->prev_leftover[ll_idx];
             } else {
-                fbank->data[j] = wave[start_idx + j] * fbank->window[j];
+                fbank->data[j] = wave[start_idx + j];
             }
         }
+
+        // Not included: dither
+
+        // Apply remove dc offset
+        if(fbank->opts.remove_dc_offset) {
+            float sum = 0;
+            for(int j=0; j<fbank->padded_window_size; j++) sum += fbank->data[j];
+            float mean = sum / fbank->padded_window_size;
+            for(int j=0; j<fbank->padded_window_size; j++) fbank->data[j] -= mean;
+        }
+
+        // Apply preemphasize
+        if(preemph_coeff > 0.0f) {
+            for(int j=fbank->padded_window_size-1; j>0; --j)
+                fbank->data[j] -= preemph_coeff * fbank->data[j - 1];
+            fbank->data[0] -= preemph_coeff * fbank->data[0];
+        }
+
+        // Apply window function
+        for(int j=0; j<fbank->padded_window_size; j++)
+            fbank->data[j] *= fbank->window[j];
 
         double *dptr = fbank->data;
         double *rptr = fbank->ret;

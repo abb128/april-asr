@@ -60,6 +60,9 @@ typedef struct FBankOptions {
 
     // If false, speed feature will be unavailable
     bool use_sonic;
+
+    bool remove_dc_offset; // true
+    float preemph_coeff; // 0.97
 } FBankOptions;
 
 OnlineFBank make_fbank(FBankOptions opts);

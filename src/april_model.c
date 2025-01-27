@@ -93,6 +93,9 @@ AprilASRModel aam_create_model(const char *model_path) {
     //aam->fbank_opts.snip_edges         = aam->params.snip_edges;
     aam->fbank_opts.snip_edges = true;
 
+    aam->fbank_opts.remove_dc_offset = true;
+    aam->fbank_opts.preemph_coeff = 0.97f;
+
     ASSERT_OR_FREE_AAM_AND_RETURN_NULL(aam, aam->x_dim[0] == aam->params.batch_size);
     ASSERT_OR_FREE_AAM_AND_RETURN_NULL(aam, aam->x_dim[1] == aam->fbank_opts.pull_segment_count);
     ASSERT_OR_FREE_AAM_AND_RETURN_NULL(aam, aam->x_dim[2] == aam->fbank_opts.num_bins);
