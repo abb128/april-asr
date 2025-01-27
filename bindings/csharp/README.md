@@ -11,7 +11,7 @@ Open Developer PowerShell for VS 2022 and cd into the nuget directory. Run `.\bu
 
 Make sure you've built libaprilasr.so.
 
-If you've done a build with onnxruntime statically linked to libaprilasr.so, run `./build.sh -s`. Otherwise, run `./build.sh`
+Run `./build.sh`
 
 
 ## Example

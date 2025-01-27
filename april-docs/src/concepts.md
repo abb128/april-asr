@@ -113,9 +113,3 @@ For example, the text `"THAT'S COOL ELEPHANTS"` may be represented as tokens lik
 * Simply concatenating these strings will give you the correct `" THAT'S COOL ELEPHANTS"`, but with an extra space at the beginning. You may want to strip the final string to avoid the extra space.
 
 Tokens contain more data than just the string however. They also contain the log probability, and a boolean denoting whether or not it's a word boundary. In English, the word boundary value is equivalent to checking if the first character is a space.
-
-## Dependencies
-
-AprilASR depends on ONNXRuntime for ML inference. You will need both libraries for it to work:
-* Linux: `libaprilasr.so` and `libonnxruntime.so`
-* Windows: `libaprilasr.dll` and `onnxruntime.dll`

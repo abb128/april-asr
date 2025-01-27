@@ -31,18 +31,6 @@ jobs:
         with:
           packages: build-essential cmake wget tar
 
-      - if: matrix.os == 'ubuntu-20.04'
-        name: Download ONNXRuntime (Linux)
-        shell: bash
-        working-directory: ${{github.workspace}}
-        run: ./download_onnx_linux_x64.sh
-      
-      - if: matrix.os == 'windows-latest'
-        name: Download ONNXRuntime (Windows)
-        shell: bash
-        working-directory: ${{github.workspace}}
-        run: ./download_onnx_windows_x64.sh
-
       - name: Create Build Environment
         run: cmake -E make_directory ${{github.workspace}}/build
 
@@ -91,13 +79,6 @@ jobs:
           path: ${{github.workspace}}/build/Release/libaprilasr.dll
       
       - if: matrix.os == 'windows-latest'
-        name: Upload onnxruntime.dll
-        uses: actions/upload-artifact@v3.1.0
-        with:
-          name: onnxruntime.dll
-          path: ${{github.workspace}}/lib/lib/onnxruntime.dll
-      
-      - if: matrix.os == 'windows-latest'
         name: Upload Python wheel (Windows)
         uses: actions/upload-artifact@v3.1.0
         with:
@@ -110,13 +91,6 @@ jobs:
         with:
           name: libaprilasr.so
           path: ${{github.workspace}}/build/libaprilasr.so
-
-      - if: matrix.os == 'ubuntu-20.04'
-        name: Upload libonnxruntime.so
-        uses: actions/upload-artifact@v3.1.0
-        with:
-          name: libonnxruntime.so
-          path: ${{github.workspace}}/lib/lib/libonnxruntime.so
 
       - if: matrix.os == 'ubuntu-20.04'
         name: Upload Python wheel (Linux)
@@ -147,22 +121,10 @@ jobs:
           name: libaprilasr.so
           path: ${{github.workspace}}/bindings/csharp/nuget/build/lib/linux-x64/
 
-      - name: Download Linux onnxruntime
-        uses: actions/download-artifact@master
-        with:
-          name: libonnxruntime.so
-          path: ${{github.workspace}}/bindings/csharp/nuget/build/lib/linux-x64/
-
       - name: Download Windows aprilasr
         uses: actions/download-artifact@master
         with:
           name: libaprilasr.dll
-          path: ${{github.workspace}}/bindings/csharp/nuget/build/lib/win-x64/
-
-      - name: Download Windows onnxruntime
-        uses: actions/download-artifact@master
-        with:
-          name: onnxruntime.dll
           path: ${{github.workspace}}/bindings/csharp/nuget/build/lib/win-x64/
 
       - name: Display structure of downloaded files
