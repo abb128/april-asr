@@ -29,7 +29,15 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <filesystem>
+
+bool file_exists(const char* filename) {
+    FILE* file = fopen(filename, "r");
+    if (file) {
+        fclose(file);
+        return true;
+    }
+    return false;
+}
 
 bool ends_with(const std::string &a, const std::string &b) {
     if (b.length() > a.length()) {
@@ -218,7 +226,7 @@ int main(int argc, char ** argv) {
     std::string out_filename   = argv[2];
     std::string quant_typename = argv[3];
 
-    if(!std::filesystem::exists(src_filename)) {
+    if(!file_exists(src_filename.c_str())) {
         printf("file %s not found\n", src_filename.c_str());
         return 1;
     }
