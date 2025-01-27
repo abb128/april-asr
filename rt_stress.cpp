@@ -1,6 +1,3 @@
-// For basic live captioning of desktop audio, run it like so:
-// parec --format=s16 --rate=16000 --channels=1 --latency-ms=100 --device=@DEFAULT_MONITOR@ | ./main - /path/to/model.gguf
-
 #include <stdio.h>
 #include <cstdlib>
 #include <cstring>
@@ -17,6 +14,32 @@
 #define STDIN_FILENO 0
 typedef SSIZE_T ssize_t;
 #endif
+
+
+#include <time.h>
+#include <errno.h>    
+
+/* msleep(): Sleep for the requested number of milliseconds. */
+int msleep(long msec)
+{
+    struct timespec ts;
+    int res;
+
+    if (msec < 0)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    ts.tv_sec = msec / 1000;
+    ts.tv_nsec = (msec % 1000) * 1000000;
+
+    do {
+        res = nanosleep(&ts, &ts);
+    } while (res && errno == EINTR);
+
+    return res;
+}
 
 #define BUFFER_SIZE 1024
 int ends_with(const char *str, const char *suffix);
@@ -51,17 +74,22 @@ struct {
     int xyz;
 } some_internal_state;
 
+#define SESS_COUNT 38
 // This callback function will get called every time a new result is decoded.
 // It's passed into the AprilConfig along with the userdata pointer.
 void handler(void *userdata, AprilResultType result, size_t count, const AprilToken *tokens) {
-    assert(userdata == &some_internal_state);
+    //assert(userdata == &some_internal_state);
+    //if(userdata != (void *)(SESS_COUNT - 1)) return;
+    int idx = (int64_t)userdata;
+    
+    if(idx != SESS_COUNT - 1) return;
 
     switch(result){
         case APRIL_RESULT_RECOGNITION_FINAL: 
-            printf("@ ");
+            printf("%d @ ", idx);
             break;
         case APRIL_RESULT_RECOGNITION_PARTIAL:
-            printf("- ");
+            printf("%d - ", idx);
             break;
         case APRIL_RESULT_SILENCE:
             break;
@@ -117,14 +145,17 @@ int main(int argc, char *argv[]){
     // before all of its sessions.
     AprilConfig config = { 0 };
     config.handler = handler;
-    config.userdata = (void*)&some_internal_state;
 
     // By default, the session runs in synchronous mode. If you want async
     // processing, you may choose to set it to APRIL_CONFIG_FLAG_ASYNC_RT_BIT
     // here.
-    config.flags = APRIL_CONFIG_FLAG_ZERO_BIT;
+    config.flags = APRIL_CONFIG_FLAG_ASYNC_RT_BIT;//APRIL_CONFIG_FLAG_ZERO_BIT;
 
-    AprilASRSession session = aas_create_session(model, config);
+    AprilASRSession sessions[SESS_COUNT];
+    for(int i=0; i<SESS_COUNT; i++){
+        config.userdata = (void *)i;
+        sessions[i] = aas_create_session(model, config);
+    } 
 
 
     if(argv[1][0] == '-' && argv[1][1] == 0) {
@@ -139,21 +170,26 @@ int main(int argc, char *argv[]){
             r = read(STDIN_FILENO, data, BUFFER_SIZE);
             
             if (r == -1) {
-                aas_flush(session);
+                for(int i=0; i<SESS_COUNT; i++)
+                    aas_flush(sessions[i]);
                 break;
             } else
             if (r <= 0) {
                 continue;
             }
             
-            aas_feed_pcm16(session, (short *)data, r/2);
+            for(int i=0; i<SESS_COUNT; i++)
+                aas_feed_pcm16(sessions[i], (short *)data, r/2);
         }
     } else if (argv[1][0] == '?' && argv[1][1] == 0) {
         // Run some blank data, mainly for memory leak testing
         char data[6400];
         memset(data, 0, 6400);
-        aas_feed_pcm16(session, (short *)data, 3200);
-        aas_flush(session);
+        for(int i=0; i<SESS_COUNT; i++)
+            aas_feed_pcm16(sessions[i], (short *)data, 3200);
+
+        for(int i=0; i<SESS_COUNT; i++)
+            aas_flush(sessions[i]);
     } else {
         // wave file mode, the file must be in PCM16 format sampled in the
         // model's sample rate.
@@ -203,11 +239,19 @@ int main(int argc, char *argv[]){
         // For synchronous mode, it's possible to feed the entire thing at once
         // For asynchronous, you may want to break it up into smaller chunks
         // over time because the size of the internal buffer is limited
-        aas_feed_pcm16(session, file_data, num_shorts);
+        for(int c=0; c<5; c++) {
+            int seg_size = 100;
+            for(int i=0; i<num_shorts/seg_size; i++) {
+                for(int s=0; s<SESS_COUNT; s++)
+                    aas_feed_pcm16(sessions[s], &file_data[i*seg_size], seg_size);
+                msleep(seg_size / 16);
+            }
+        }
 
         // Flushing makes sure any remaining frames get processed and a final
         // result is given
-        aas_flush(session);
+        for(int i=0; i<SESS_COUNT; i++)
+            aas_flush(sessions[i]);
 
         printf("\ndone\n");
 
@@ -215,7 +259,8 @@ int main(int argc, char *argv[]){
         fclose(fd);
     }
 
-    aas_free(session);
+    for(int i=0; i<SESS_COUNT; i++)
+        aas_free(sessions[i]);
     aam_free(model);
 
     return 0;

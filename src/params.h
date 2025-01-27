@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 abb128
+ * Copyright (C) 2025 abb128
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,10 +42,10 @@ typedef struct ModelParameters {
     int token_count;
     size_t token_length;
     
-    char *tokens;
+    const char *tokens;
 } ModelParameters;
 
-char *get_token(ModelParameters *params, size_t token_index);
+const char *get_token(ModelParameters *params, size_t token_index);
 
 // Returns false if reading failed
 bool read_params(ModelParameters *params, const char *path);

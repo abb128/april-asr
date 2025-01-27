@@ -14,6 +14,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
 #include <time.h>
 #include "common.h"
 #include "log.h"
@@ -29,54 +32,19 @@ AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config) {
     aas->force_realtime = (config.flags & APRIL_CONFIG_FLAG_ASYNC_RT_BIT) != 0;
 
     FBankOptions fbank_opts = model->fbank_opts;
-    fbank_opts.use_sonic = aas->force_realtime;
+    fbank_opts.use_sonic = false;//aas->force_realtime; // TODO: Implement
 
     aas->model = model;
     aas->fbank = make_fbank(fbank_opts);
 
-    ORT_ABORT_ON_ERROR(g_ort->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &aas->memory_info));
-    OrtMemoryInfo *mi = aas->memory_info;
-
-    aas->x = alloc_tensor3f(mi, model->x_dim);
-    for(int i=0; i<2; i++){
-        aas->h[i] = alloc_tensor3f(mi, model->h_dim);
-        aas->c[i] = alloc_tensor3f(mi, model->c_dim);
-    }
-
-    aas->eout = alloc_tensor3f(mi, model->eout_dim);
-    aas->dout = alloc_tensor3f(mi, model->dout_dim);
-
-    aas->context = alloc_tensor2i(mi, model->context_dim);
-
-    if(model->context_dim[0] != 1) {
-        LOG_ERROR("Currently, only batch size 1 is supported. Got batch size %ld", model->context_dim[0]);
-        aas_free(aas);
-        return NULL;
-    }
-    aas->context_size = model->context_dim[1];
-
-    aas->logits = alloc_tensor3f(mi, model->logits_dim);
-
-    aas->dout_init = false;
-    aas->hc_use_0 = false;
     aas->active_token_head = 0;
+    aas->context_size = 2;
 
     aas->emitted_silence = true;
     aas->was_flushed = false;
 
-    assert(aas->fbank          != NULL);
-    assert(aas->x.tensor       != NULL);
-    assert(aas->h[0].tensor    != NULL);
-    assert(aas->c[0].tensor    != NULL);
-    assert(aas->h[1].tensor    != NULL);
-    assert(aas->c[1].tensor    != NULL);
-    assert(aas->eout.tensor    != NULL);
-    assert(aas->context.tensor != NULL);
-    assert(aas->logits.tensor  != NULL);
-
     aas->handler = config.handler;
     aas->userdata = config.userdata;
-    aas->speed_needed = 1.0;
 
     if(aas->handler == NULL) {
         LOG_ERROR("No handler provided! A handler is required, please provide a handler");
@@ -84,115 +52,51 @@ AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config) {
         return NULL;
     }
 
-    if(!aas->sync){
-        aas->provider = ap_create();
-        aas->thread = pt_create(run_aas_callback, aas);
+    aas->provider = ap_create();
+
+    model_alloc_tensors(model->model, &aas->tensors);
+
+    // Insert into sessions. TODO: Handle having too many sessions
+    for(int i=0; i<MAX_SESSIONS; i++) {
+        if(model->sessions[i] == NULL) {
+            model->sessions[i] = aas;
+            break;
+        }
     }
+
+    aas->tensors.token_ctx[0] = 0;
+    aas->tensors.token_ctx[1] = 0;
+    aas->tensors.requires_decoding = true;
 
     return aas;
 }
 
 float aas_realtime_get_speedup(AprilASRSession session) {
-    return session->force_realtime ? (float)session->speed_needed : 1.0f;
+    return 1.0f;// TODO: session->force_realtime ? (float)session->speed_needed : 1.0f;
 }
 
 void aas_free(AprilASRSession session) {
     if(session == NULL) return;
 
-    pt_free(session->thread);
-    ap_free(session->provider);
+    // TODO: Free tensors (they are being leaked right now)
 
-    free_tensorf(&session->logits);
-    free_tensori(&session->context);
-    free_tensorf(&session->eout);
-    free_tensorf(&session->dout);
-    for(int i=0; i<2; i++) {
-        free_tensorf(&session->c[i]);
-        free_tensorf(&session->h[i]);
+    for(int i=0; i<MAX_SESSIONS; i++) {
+        if(session->model->sessions[i] == session) {
+            session->model->sessions[i] = NULL;
+            break;
+        }
     }
 
-    free_tensorf(&session->x);
-    g_ort->ReleaseMemoryInfo(session->memory_info);
+    ap_free(session->provider);
     free_fbank(session->fbank);
-
     free(session);
 }
 
-const char* encoder_input_names[] = {"x", "h", "c"};
-const char* encoder_output_names[] = {"encoder_out", "next_h", "next_c"};
-
-const char* decoder_input_names[] = {"context"};
-const char* decoder_output_names[] = {"decoder_out"};
-
-const char* joiner_input_names[] = {"encoder_out", "decoder_out"};
-const char* joiner_output_names[] = {"logits"};
-
-// Runs encoder on current data in aas->x
-void aas_run_encoder(AprilASRSession aas){
-    aas->hc_use_0 = !aas->hc_use_0;
-    const OrtValue *inputs[] = {
-        aas->x.tensor,
-        aas->h[aas->hc_use_0 ? 0 : 1].tensor,
-        aas->c[aas->hc_use_0 ? 0 : 1].tensor
-    };
-
-    OrtValue *outputs[] = {
-        aas->eout.tensor,
-        aas->h[aas->hc_use_0 ? 1 : 0].tensor,
-        aas->c[aas->hc_use_0 ? 1 : 0].tensor
-    };
-
-    ORT_ABORT_ON_ERROR(g_ort->Run(aas->model->encoder, NULL,
-                                    encoder_input_names, inputs, 3,
-                                    encoder_output_names, 3, outputs));
-}
-
-// Runs decoder on current data in aas->context
-void aas_run_decoder(AprilASRSession aas){
-    const OrtValue *inputs[] = {
-        aas->context.tensor
-    };
-
-    OrtValue *outputs[] = {
-        aas->dout.tensor
-    };
-
-    ORT_ABORT_ON_ERROR(g_ort->Run(aas->model->decoder, NULL,
-                                    decoder_input_names, inputs, 1,
-                                    decoder_output_names, 1, outputs));
-}
-
-// Runs joiner on current data in aas->eout and aas->dout
-void aas_run_joiner(AprilASRSession aas){
-    const OrtValue *inputs[] = {
-        aas->eout.tensor,
-        aas->dout.tensor
-    };
-
-    OrtValue *outputs[] = {
-        aas->logits.tensor
-    };
-
-    ORT_ABORT_ON_ERROR(g_ort->Run(aas->model->joiner, NULL,
-                                    joiner_input_names, inputs, 2,
-                                    joiner_output_names, 1, outputs));
-}
-
 void aas_update_context(AprilASRSession aas, int64_t new_token){
-    if(aas->context_size == 2) {
-        aas->context.data[0] = aas->context.data[1];
-        aas->context.data[1] = new_token;
-    } else {
-        size_t last_idx = aas->context_size - 1;
-        memmove(
-            &aas->context.data[0], &aas->context.data[1],
-            last_idx * sizeof(int64_t)
-        );
-
-        aas->context.data[last_idx] = new_token;
-    }
-
-    aas_run_decoder(aas);
+    assert(aas->context_size == 2);
+    aas->tensors.token_ctx[0] = aas->tensors.token_ctx[1];
+    aas->tensors.token_ctx[1] = new_token;
+    aas->tensors.requires_decoding = true;
 }
 
 
@@ -294,7 +198,7 @@ bool aas_emit_token(AprilASRSession aas, AprilToken *new_token, bool force){
 }
 
 void aas_clear_context(AprilASRSession aas) {
-    if(aas->context.data[0] == aas->model->params.blank_id) return;
+    if(aas->tensors.token_ctx[0] == aas->model->params.blank_id) return;
 
     for(int i=0; i<aas->context_size; i++)
         aas_update_context(aas, aas->model->params.blank_id);
@@ -306,7 +210,7 @@ void aas_clear_context(AprilASRSession aas) {
 bool aas_process_logits(AprilASRSession aas, float early_emit){
     ModelParameters *params = &aas->model->params;
     size_t blank = params->blank_id;
-    float *logits = aas->logits.data;
+    float *logits = aas->tensors.logits;
 
     int max_idx = -1;
     float max_val = -9999999999.0;
@@ -319,11 +223,11 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
         }
     }
 
-    bool was_context_cleared = aas->context.data[1] == aas->model->params.blank_id;
+    bool was_context_cleared = aas->tensors.token_ctx[1] == aas->model->params.blank_id;
 
     // If the current token is equal to previous, ignore early_emit.
     // Helps prevent repeating like ALUMUMUMUMUMUININININIUM which happens for some reason
-    bool is_equal_to_previous = aas->context.data[1] == max_idx;
+    bool is_equal_to_previous = aas->tensors.token_ctx[1] == max_idx;
     if(is_equal_to_previous) early_emit = 0.0f;
 
     float blank_val = logits[blank];
@@ -429,50 +333,11 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
 }
 
 bool aas_infer(AprilASRSession aas){
-    if(!aas->dout_init) {
-        for(size_t i=0; i<aas->context_size; i++) {
-            aas_update_context(aas, aas->model->params.blank_id);
-        }
+    if(!aas->sync) return false;
 
-        aas->dout_init = true;
-    }
-
-    bool any_inferred = false;
-    while(fbank_pull_segments( aas->fbank, aas->x.data, sizeof(float)*SHAPE_PRODUCT3(aas->model->x_dim) )){
-        size_t stride_ms = fbank_get_segments_stride_ms(aas->fbank);
-        aas->current_time_ms += stride_ms;
-
-        clock_t clock_start = clock();
-
-        aas_run_encoder(aas);
-
-        float early_emit = 2.0f;
-        for(int i=0; i<3; i++){
-            early_emit -= 1.0f;
-            aas_run_joiner(aas);
-            if(aas_process_logits(aas, early_emit > 0.0f ? early_emit : 0.0f)) break;
-        }
-
-        clock_t clock_end = clock();
-
-        double time_used_ms = ((double)(clock_end - clock_start) * 1000.0) / ((double)CLOCKS_PER_SEC);
-        double stride_ms_d = (double)stride_ms;
-
-        double speed_needed = (time_used_ms * 1.1) / stride_ms_d;
-        aas->speed_needed = ((aas->speed_needed * 9.0) + speed_needed)/10.0;
-
-        aas->time_since_update_speed += stride_ms;
-
-        any_inferred = true;
-    }
-
-    if(aas->force_realtime && (aas->time_since_update_speed > 2000)) {
-        fbank_set_speed(aas->fbank, aas->speed_needed > 1.0 ? aas->speed_needed : 1.0);
-
-        aas->time_since_update_speed = 0;
-    }
-
-    return any_inferred;
+    // In synchronous session, call collect_loop with our session
+    // This will perform inference with our session only (batch size 1)
+    return aam_collect_loop(aas->model, aas) > 0;
 }
 
 void _aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count);
@@ -480,7 +345,8 @@ void aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count) {
     if(session->sync) return _aas_feed_pcm16(session, pcm16, short_count);
 
     bool success = ap_push_audio(session->provider, pcm16, short_count);
-    pt_raise(session->thread, PT_FLAG_AUDIO);
+
+    aam_pt_raise_flag(session->model);
 
     if(!success){
         session->handler(
@@ -492,9 +358,8 @@ void aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count) {
     }
 }
 
-
 #ifdef APRIL_DEBUG_SAVE_AUDIO
-FILE *fd = NULL;
+static FILE *fd = NULL;
 #endif
 
 #define SEGSIZE 3200 //TODO
@@ -527,7 +392,7 @@ void _aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count) 
 
         fbank_accept_waveform(session->fbank, wave, remaining);
 
-        aas_infer(session);
+        if(session->sync) aas_infer(session);
 
         head += remaining;
     }
@@ -541,7 +406,7 @@ void _aas_flush(AprilASRSession session);
 void aas_flush(AprilASRSession session) {
     if(session->sync) return _aas_flush(session);
 
-    pt_raise(session->thread, PT_FLAG_FLUSH);
+    // TODO: Implement
 }
 
 void _aas_flush(AprilASRSession session) {
@@ -561,6 +426,20 @@ void _aas_flush(AprilASRSession session) {
     aas_finalize_tokens(session);
     aas_clear_context(session);
     aas_emit_silence(session);
+}
+
+int aas_run_self_pt_tasks(AprilASRSession aas) {
+    // TODO: Check if aas->flush_flag then flush
+
+    // TODO: This only pulls once, if the caller is calling with
+    // larger amount of data we might fall behind
+    size_t short_count = 3200;
+    short *shorts = ap_pull_audio(aas->provider, &short_count);
+    if(short_count == 0) return 0;
+
+    _aas_feed_pcm16(aas, shorts, short_count);
+
+    ap_pull_audio_finish(aas->provider, short_count);
 }
 
 

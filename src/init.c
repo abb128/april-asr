@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 abb128
+ * Copyright (C) 2025 abb128
  * 
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,16 +18,15 @@
 #include <assert.h>
 #include <time.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
 #include "common.h"
 #include "april_api.h"
 #include "fbank.h"
-#include "onnxruntime_c_api.h"
-#include "ort_util.h"
 #include "log.h"
 
 int g_client_version = 0;
-const OrtApi* g_ort = NULL;
 LogLevel g_loglevel = LEVEL_WARNING;
 
 void aam_api_init(int version){
@@ -41,11 +40,5 @@ void aam_api_init(int version){
             }
         }
         LOG_DEBUG("Using LogLevel %d", g_loglevel);
-    }
-
-    g_ort = OrtGetApiBase()->GetApi(ORT_API_VERSION);
-    if (!g_ort) {
-        LOG_ERROR("Failed to init ONNX Runtime engine!");
-        exit(-1);
     }
 }
