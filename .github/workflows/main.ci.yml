@@ -141,26 +141,30 @@ jobs:
         with:
           packages: mono-mcs nuget
 
+      - name: Ensure nuget is installed
+        run: apt install -y nuget
+        working-directory: ${{github.workspace}}
+      
       - name: Download Linux aprilasr
-        uses: actions/download-artifact@master
+        uses: actions/download-artifact@v4
         with:
           name: libaprilasr.so
           path: ${{github.workspace}}/bindings/csharp/nuget/build/lib/linux-x64/
 
       - name: Download Linux onnxruntime
-        uses: actions/download-artifact@master
+        uses: actions/download-artifact@v4
         with:
           name: libonnxruntime.so
           path: ${{github.workspace}}/bindings/csharp/nuget/build/lib/linux-x64/
 
       - name: Download Windows aprilasr
-        uses: actions/download-artifact@master
+        uses: actions/download-artifact@v4
         with:
           name: libaprilasr.dll
           path: ${{github.workspace}}/bindings/csharp/nuget/build/lib/win-x64/
 
       - name: Download Windows onnxruntime
-        uses: actions/download-artifact@master
+        uses: actions/download-artifact@v4
         with:
           name: onnxruntime.dll
           path: ${{github.workspace}}/bindings/csharp/nuget/build/lib/win-x64/
