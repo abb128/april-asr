@@ -85,42 +85,42 @@ jobs:
 
       - if: matrix.os == 'windows-latest'
         name: Upload libaprilasr.dll
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v4
         with:
           name: libaprilasr.dll
           path: ${{github.workspace}}/build/Release/libaprilasr.dll
       
       - if: matrix.os == 'windows-latest'
         name: Upload onnxruntime.dll
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v4
         with:
           name: onnxruntime.dll
           path: ${{github.workspace}}/lib/lib/onnxruntime.dll
       
       - if: matrix.os == 'windows-latest'
         name: Upload Python wheel (Windows)
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v4
         with:
           name: windows-python-dist
           path: ${{github.workspace}}/bindings/python/dist
       
       - if: matrix.os == 'ubuntu-20.04'
         name: Upload libaprilasr.so
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v4
         with:
           name: libaprilasr.so
           path: ${{github.workspace}}/build/libaprilasr.so
 
       - if: matrix.os == 'ubuntu-20.04'
         name: Upload libonnxruntime.so
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v4
         with:
           name: libonnxruntime.so
           path: ${{github.workspace}}/lib/lib/libonnxruntime.so
 
       - if: matrix.os == 'ubuntu-20.04'
         name: Upload Python wheel (Linux)
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v4
         with:
           name: ubuntu-python-dist
           path: ${{github.workspace}}/bindings/python/wheelhouse
@@ -178,7 +178,7 @@ jobs:
         run: mkdir out && nuget pack -Verbosity detailed -OutputDirectory out
       
       - name: Upload nupkg
-        uses: actions/upload-artifact@v3.1.0
+        uses: actions/upload-artifact@v4
         with:
           name: nupkg
           path: ${{github.workspace}}/bindings/csharp/nuget/out
