@@ -16,7 +16,7 @@ jobs:
         fetch-depth: 0
 
     - name: Install doxygen
-      uses: awalsh128/cache-apt-pkgs-action@v1.2.4
+      uses: awalsh128/cache-apt-pkgs-action@v1.4.3
       with:
         packages: doxygen
     

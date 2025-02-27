@@ -27,7 +27,7 @@ jobs:
       
       - if: matrix.os == 'ubuntu-20.04'
         name: Install apt packages
-        uses: awalsh128/cache-apt-pkgs-action@v1.2.4
+        uses: awalsh128/cache-apt-pkgs-action@v1.4.3
         with:
           packages: build-essential cmake wget tar
 
@@ -137,7 +137,7 @@ jobs:
           submodules: recursive
       
       - name: Install apt packages
-        uses: awalsh128/cache-apt-pkgs-action@v1.2.4
+        uses: awalsh128/cache-apt-pkgs-action@v1.4.3
         with:
           packages: mono-mcs nuget
 
