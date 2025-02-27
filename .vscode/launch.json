@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Launch",
+            "env": {"LD_LIBRARY_PATH": "${workspaceFolder}/lib/lib", "APRIL_LOG_LEVEL": "DEBUG"},
+            "program": "${workspaceFolder}/build/main",
+            "args": ["${workspaceFolder}/build/test.wav", "${workspaceFolder}/build/aprilv0_en-us.april"],
+            "cwd": "${workspaceFolder}"
+        },
+    ]
+}

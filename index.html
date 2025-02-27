@@ -1,0 +1,287 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>README - april-asr Documentation</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html" class="active">README</a></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">1.</strong> General Concepts</a></li><li class="chapter-item expanded "><a href="models.html"><strong aria-hidden="true">2.</strong> Model Downloads</a></li><li class="chapter-item expanded affix "><li class="part-title">Language Bindings</li><li class="chapter-item expanded "><a href="python.html"><strong aria-hidden="true">3.</strong> Python</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="april_asr/index.html"><strong aria-hidden="true">3.1.</strong> API reference</a></li></ol></li><li class="chapter-item expanded "><a href="csharp.html"><strong aria-hidden="true">4.</strong> C#</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="csharp/html/namespace_april_asr.html"><strong aria-hidden="true">4.1.</strong> API reference</a></li></ol></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">april-asr Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="april-asr"><a class="header" href="#april-asr">april-asr</a></h1>
+<p><a href="https://github.com/abb128/april-asr">aprilasr</a> is a minimal library that provides an API for offline streaming speech-to-text applications</p>
+<p><a href="https://abb128.github.io/april-asr/concepts.html">Documentation</a></p>
+<h2 id="status"><a class="header" href="#status">Status</a></h2>
+<p>This library is currently facing some major rewrites over 2025 to improve efficiency and properly fulfill the API contract of multi-session support. The model format is going to change.</p>
+<h2 id="language-support"><a class="header" href="#language-support">Language support</a></h2>
+<p>The core library is written in C, and has a C API. <a href="https://abb128.github.io/april-asr/python.html">Python</a> and <a href="https://abb128.github.io/april-asr/csharp.html">C#</a> bindings are available.</p>
+<h2 id="example-in-python"><a class="header" href="#example-in-python">Example in Python</a></h2>
+<p>Install via <code>pip install april-asr</code></p>
+<pre><code class="language-py">import april_asr as april
+import librosa
+
+# Change these values
+model_path = &quot;aprilv0_en-us.april&quot;
+audio_path = &quot;audio.wav&quot;
+
+model = april.Model(model_path)
+
+
+def handler(result_type, tokens):
+    s = &quot;&quot;
+    for token in tokens:
+        s = s + token.token
+    
+    if result_type == april.Result.FINAL_RECOGNITION:
+        print(&quot;@&quot;+s)
+    elif result_type == april.Result.PARTIAL_RECOGNITION:
+        print(&quot;-&quot;+s)
+    else:
+        print(&quot;&quot;)
+
+session = april.Session(model, handler)
+
+data, sr = librosa.load(audio_path, sr=model.get_sample_rate(), mono=True)
+data = (data * 32767).astype(&quot;short&quot;).astype(&quot;&lt;u2&quot;).tobytes()
+
+session.feed_pcm16(data)
+session.flush()
+</code></pre>
+<p>Read the <a href="https://abb128.github.io/april-asr/python.html">Python documentation here</a>.</p>
+<h2 id="example-in-c"><a class="header" href="#example-in-c">Example in C</a></h2>
+<p>An example use of this library is provided in <code>example.cpp</code>. It can perform speech recognition on a wave file, or do streaming recognition by reading stdin.</p>
+<p>It's built as the target <code>main</code>. After building aprilasr, you can run it like so:</p>
+<pre><code>$ ./main /path/to/file.wav /path/to/model.april
+</code></pre>
+<p>For streaming recognition, you can pipe parec into it. The command below will live caption your desktop audio.</p>
+<pre><code>$ parec --format=s16 --rate=16000 --channels=1 --latency-ms=100 --device=@DEFAULT_MONITOR@ | ./main - /path/to/model.april
+</code></pre>
+<h2 id="models"><a class="header" href="#models">Models</a></h2>
+<p>A few models are available, listed <a href="https://abb128.github.io/april-asr/models.html">here</a>. </p>
+<p>The English models are based on <a href="https://huggingface.co/csukuangfj/icefall-asr-librispeech-lstm-transducer-stateless2-2022-09-03/tree/main/exp">csukuangfj's trained icefall model</a> as the base, and trained with some extra data.</p>
+<p>To export your own models, check out <code>extra/exporting-howto.md</code></p>
+<h2 id="building-on-linux"><a class="header" href="#building-on-linux">Building on Linux</a></h2>
+<p>Building requires ONNXRuntime. You can either try to build it from source or just download the release binaries.</p>
+<h3 id="downloading-onnxruntime"><a class="header" href="#downloading-onnxruntime">Downloading ONNXRuntime</a></h3>
+<p>Run <code>./download_onnx_linux_x64.sh</code> for linux-x64.</p>
+<p>For other platforms the script should be very similar, or visit https://github.com/microsoft/onnxruntime/releases/tag/v1.13.1 and download the right zip/tgz file for your platform and extract the contents to a directory named <code>lib</code>.</p>
+<p>You may also define the env variable <code>ONNX_ROOT</code> containing a path to where you extracted the archive, if placing it in <code>lib</code> isn't a choice.</p>
+<h3 id="building-onnxruntime-from-source-untested"><a class="header" href="#building-onnxruntime-from-source-untested">Building ONNXRuntime from source (untested)</a></h3>
+<p>You don't need to do this if you've downloaded ONNXRuntime.</p>
+<p>Follow the instructions here: https://onnxruntime.ai/docs/how-to/build/inferencing.html#linux</p>
+<p>then run</p>
+<pre><code>cd build/Linux/RelWithDebInfo/
+sudo make install
+</code></pre>
+<h3 id="building-aprilasr"><a class="header" href="#building-aprilasr">Building aprilasr</a></h3>
+<p>Run:</p>
+<pre><code>$ mkdir build
+$ cd build
+$ cmake -DCMAKE_BUILD_TYPE=Release ..
+$ make -j4
+</code></pre>
+<p>You should now have <code>main</code>, <code>libaprilasr.so</code> and <code>libaprilasr_static.so</code>.</p>
+<p>If running <code>main</code> fails because it can't find <code>libonnxruntime.so.1.13.1</code>, you may need to make <code>libonnxruntime.so.1.13.1</code> accessible like so:</p>
+<pre><code>$ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/../lib/lib/
+</code></pre>
+<h2 id="building-on-windows-msvc"><a class="header" href="#building-on-windows-msvc">Building on Windows (msvc)</a></h2>
+<p>Create a folder called <code>lib</code> in the april-asr folder.</p>
+<p>Download <a href="https://github.com/microsoft/onnxruntime/releases/download/v1.13.1/onnxruntime-win-x64-1.13.1.zip">onnxruntime-win-x64-1.13.1.zip</a> and extract the insides of the onnxruntime-win-x64-1.13.1 folder to the <code>lib</code> folder</p>
+<p>Run cmake to configure and generate Visual Studio project files. Make sure you select x64 as the target if you have downloaded the x64 version of ONNXRuntime.</p>
+<p>Open the <code>ALL_BUILD.vcxproj</code> and everything should build. The output will be in the Release or Debug folders.</p>
+<p>When running main.exe you may receive an error message like this:</p>
+<blockquote>
+<p>The application was unable to start correctly (0xc000007b)</p>
+</blockquote>
+<p>To fix this, you need to make onnxruntime.dll available. One way to do this is to copy onnxruntime.dll from lib/lib/onnxruntime.dll to build/Debug and build/Release. You may need to distribute the dll together with your application.</p>
+<h2 id="applications"><a class="header" href="#applications">Applications</a></h2>
+<p>Currently I'm developing <a href="https://github.com/abb128/LiveCaptions">Live Captions</a>, a Linux desktop app that provides live captioning.</p>
+<h2 id="acknowledgements"><a class="header" href="#acknowledgements">Acknowledgements</a></h2>
+<p>Thanks to the <a href="https://github.com/k2-fsa/icefall">k2-fsa/icefall</a> contributors for creating the speech recognition recipes and models.</p>
+<p>This project makes use of a few libraries:</p>
+<ul>
+<li>pocketfft, authored by Martin Reinecke, Copyright (C) 2008-2018 Max-Planck-Society, licensed under BSD-3-Clause</li>
+<li>Sonic library, authored by Bill Cox, Copyright (C) 2010 Bill Cox, licensed under Apache 2.0 license</li>
+<li>tinycthread, authored by Marcus Geelnard and Evan Nemerson, licensed under zlib/libpng license</li>
+</ul>
+<p>The bindings are based on the <a href="https://github.com/alphacep/vosk-api">Vosk API bindings</a>, which is another speech recognition library based on previous-generation Kaldi. Vosk is Copyright 2019 Alpha Cephei Inc. and licensed under the Apache 2.0 license.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+                            <a rel="next" href="concepts.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+                    <a rel="next" href="concepts.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

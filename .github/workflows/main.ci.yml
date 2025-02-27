@@ -1,0 +1,188 @@
+name: AprilASR CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build library
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - if: matrix.os == 'ubuntu-20.04'
+        name: Install apt packages
+        uses: awalsh128/cache-apt-pkgs-action@v1.4.3
+        with:
+          packages: build-essential cmake wget tar
+
+      - if: matrix.os == 'ubuntu-20.04'
+        name: Download ONNXRuntime (Linux)
+        shell: bash
+        working-directory: ${{github.workspace}}
+        run: ./download_onnx_linux_x64.sh
+      
+      - if: matrix.os == 'windows-latest'
+        name: Download ONNXRuntime (Windows)
+        shell: bash
+        working-directory: ${{github.workspace}}
+        run: ./download_onnx_windows_x64.sh
+
+      - name: Create Build Environment
+        run: cmake -E make_directory ${{github.workspace}}/build
+
+      - if: matrix.os == 'windows-latest'
+        name: Configure CMake (Windows)
+        shell: bash
+        working-directory: ${{github.workspace}}/build
+        run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DUSE_TINYCTHREAD=ON
+
+      - if: matrix.os == 'ubuntu-20.04'
+        name: Configure CMake (Linux)
+        shell: bash
+        working-directory: ${{github.workspace}}/build
+        run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+
+      - name: Build libaprilasr
+        working-directory: ${{github.workspace}}/build
+        shell: bash
+        run: cmake --build . --config RELEASE
+
+      - name: Ensure wheel and auditwheel are installed
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install wheel auditwheel
+      
+      - if: matrix.os == 'ubuntu-20.04'
+        name: Update patchelf on Linux
+        run: python3 -m pip install --upgrade patchelf
+      
+      - name: Build Python whl
+        working-directory: ${{github.workspace}}/bindings/python
+        shell: bash
+        run: python3 setup.py bdist_wheel
+
+      - if: matrix.os == 'ubuntu-20.04'
+        name: Fix Linux wheel
+        working-directory: ${{github.workspace}}/bindings/python
+        shell: bash
+        run: mkdir wheelhouse && auditwheel repair dist/april_asr-*-py3-none-linux_x86_64.whl --plat manylinux_2_31_x86_64
+
+      - if: matrix.os == 'windows-latest'
+        name: Upload libaprilasr.dll
+        uses: actions/upload-artifact@v4
+        with:
+          name: libaprilasr.dll
+          path: ${{github.workspace}}/build/Release/libaprilasr.dll
+      
+      - if: matrix.os == 'windows-latest'
+        name: Upload onnxruntime.dll
+        uses: actions/upload-artifact@v4
+        with:
+          name: onnxruntime.dll
+          path: ${{github.workspace}}/lib/lib/onnxruntime.dll
+      
+      - if: matrix.os == 'windows-latest'
+        name: Upload Python wheel (Windows)
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-python-dist
+          path: ${{github.workspace}}/bindings/python/dist
+      
+      - if: matrix.os == 'ubuntu-20.04'
+        name: Upload libaprilasr.so
+        uses: actions/upload-artifact@v4
+        with:
+          name: libaprilasr.so
+          path: ${{github.workspace}}/build/libaprilasr.so
+
+      - if: matrix.os == 'ubuntu-20.04'
+        name: Upload libonnxruntime.so
+        uses: actions/upload-artifact@v4
+        with:
+          name: libonnxruntime.so
+          path: ${{github.workspace}}/lib/lib/libonnxruntime.so
+
+      - if: matrix.os == 'ubuntu-20.04'
+        name: Upload Python wheel (Linux)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubuntu-python-dist
+          path: ${{github.workspace}}/bindings/python/wheelhouse
+  nupkg:
+    name: Build nupkg
+    needs: build
+    runs-on: ubuntu-20.04
+
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Install apt packages
+        uses: awalsh128/cache-apt-pkgs-action@v1.4.3
+        with:
+          packages: mono-mcs nuget
+
+      - name: Ensure nuget is installed
+        run: sudo apt-get install -y nuget
+        working-directory: ${{github.workspace}}
+      
+      - name: Download Linux aprilasr
+        uses: actions/download-artifact@v4
+        with:
+          name: libaprilasr.so
+          path: ${{github.workspace}}/bindings/csharp/nuget/build/lib/linux-x64/
+
+      - name: Download Linux onnxruntime
+        uses: actions/download-artifact@v4
+        with:
+          name: libonnxruntime.so
+          path: ${{github.workspace}}/bindings/csharp/nuget/build/lib/linux-x64/
+
+      - name: Download Windows aprilasr
+        uses: actions/download-artifact@v4
+        with:
+          name: libaprilasr.dll
+          path: ${{github.workspace}}/bindings/csharp/nuget/build/lib/win-x64/
+
+      - name: Download Windows onnxruntime
+        uses: actions/download-artifact@v4
+        with:
+          name: onnxruntime.dll
+          path: ${{github.workspace}}/bindings/csharp/nuget/build/lib/win-x64/
+
+      - name: Display structure of downloaded files
+        run: ls -R
+        working-directory: ${{github.workspace}}/bindings/csharp/nuget/build/lib
+      
+      - name: Build C# bindings
+        working-directory: ${{github.workspace}}/bindings/csharp/nuget
+        run: mcs -out:lib/netstandard2.0/AprilAsr.dll -target:library src/*.cs
+      
+      - name: Run nuget pack
+        working-directory:  ${{github.workspace}}/bindings/csharp/nuget
+        run: mkdir out && nuget pack -Verbosity detailed -OutputDirectory out
+      
+      - name: Upload nupkg
+        uses: actions/upload-artifact@v4
+        with:
+          name: nupkg
+          path: ${{github.workspace}}/bindings/csharp/nuget/out

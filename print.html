@@ -1,0 +1,1236 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>april-asr Documentation</title>
+        <meta name="robots" content="noindex" />
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body>
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="index.html">README</a></li><li class="chapter-item expanded "><a href="concepts.html"><strong aria-hidden="true">1.</strong> General Concepts</a></li><li class="chapter-item expanded "><a href="models.html"><strong aria-hidden="true">2.</strong> Model Downloads</a></li><li class="chapter-item expanded affix "><li class="part-title">Language Bindings</li><li class="chapter-item expanded "><a href="python.html"><strong aria-hidden="true">3.</strong> Python</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="april_asr/index.html"><strong aria-hidden="true">3.1.</strong> API reference</a></li></ol></li><li class="chapter-item expanded "><a href="csharp.html"><strong aria-hidden="true">4.</strong> C#</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="csharp/html/namespace_april_asr.html"><strong aria-hidden="true">4.1.</strong> API reference</a></li></ol></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">april-asr Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="april-asr"><a class="header" href="#april-asr">april-asr</a></h1>
+<p><a href="https://github.com/abb128/april-asr">aprilasr</a> is a minimal library that provides an API for offline streaming speech-to-text applications</p>
+<p><a href="https://abb128.github.io/april-asr/concepts.html">Documentation</a></p>
+<h2 id="status"><a class="header" href="#status">Status</a></h2>
+<p>This library is currently facing some major rewrites over 2025 to improve efficiency and properly fulfill the API contract of multi-session support. The model format is going to change.</p>
+<h2 id="language-support"><a class="header" href="#language-support">Language support</a></h2>
+<p>The core library is written in C, and has a C API. <a href="https://abb128.github.io/april-asr/python.html">Python</a> and <a href="https://abb128.github.io/april-asr/csharp.html">C#</a> bindings are available.</p>
+<h2 id="example-in-python"><a class="header" href="#example-in-python">Example in Python</a></h2>
+<p>Install via <code>pip install april-asr</code></p>
+<pre><code class="language-py">import april_asr as april
+import librosa
+
+# Change these values
+model_path = &quot;aprilv0_en-us.april&quot;
+audio_path = &quot;audio.wav&quot;
+
+model = april.Model(model_path)
+
+
+def handler(result_type, tokens):
+    s = &quot;&quot;
+    for token in tokens:
+        s = s + token.token
+    
+    if result_type == april.Result.FINAL_RECOGNITION:
+        print(&quot;@&quot;+s)
+    elif result_type == april.Result.PARTIAL_RECOGNITION:
+        print(&quot;-&quot;+s)
+    else:
+        print(&quot;&quot;)
+
+session = april.Session(model, handler)
+
+data, sr = librosa.load(audio_path, sr=model.get_sample_rate(), mono=True)
+data = (data * 32767).astype(&quot;short&quot;).astype(&quot;&lt;u2&quot;).tobytes()
+
+session.feed_pcm16(data)
+session.flush()
+</code></pre>
+<p>Read the <a href="https://abb128.github.io/april-asr/python.html">Python documentation here</a>.</p>
+<h2 id="example-in-c"><a class="header" href="#example-in-c">Example in C</a></h2>
+<p>An example use of this library is provided in <code>example.cpp</code>. It can perform speech recognition on a wave file, or do streaming recognition by reading stdin.</p>
+<p>It's built as the target <code>main</code>. After building aprilasr, you can run it like so:</p>
+<pre><code>$ ./main /path/to/file.wav /path/to/model.april
+</code></pre>
+<p>For streaming recognition, you can pipe parec into it. The command below will live caption your desktop audio.</p>
+<pre><code>$ parec --format=s16 --rate=16000 --channels=1 --latency-ms=100 --device=@DEFAULT_MONITOR@ | ./main - /path/to/model.april
+</code></pre>
+<h2 id="models"><a class="header" href="#models">Models</a></h2>
+<p>A few models are available, listed <a href="https://abb128.github.io/april-asr/models.html">here</a>. </p>
+<p>The English models are based on <a href="https://huggingface.co/csukuangfj/icefall-asr-librispeech-lstm-transducer-stateless2-2022-09-03/tree/main/exp">csukuangfj's trained icefall model</a> as the base, and trained with some extra data.</p>
+<p>To export your own models, check out <code>extra/exporting-howto.md</code></p>
+<h2 id="building-on-linux"><a class="header" href="#building-on-linux">Building on Linux</a></h2>
+<p>Building requires ONNXRuntime. You can either try to build it from source or just download the release binaries.</p>
+<h3 id="downloading-onnxruntime"><a class="header" href="#downloading-onnxruntime">Downloading ONNXRuntime</a></h3>
+<p>Run <code>./download_onnx_linux_x64.sh</code> for linux-x64.</p>
+<p>For other platforms the script should be very similar, or visit https://github.com/microsoft/onnxruntime/releases/tag/v1.13.1 and download the right zip/tgz file for your platform and extract the contents to a directory named <code>lib</code>.</p>
+<p>You may also define the env variable <code>ONNX_ROOT</code> containing a path to where you extracted the archive, if placing it in <code>lib</code> isn't a choice.</p>
+<h3 id="building-onnxruntime-from-source-untested"><a class="header" href="#building-onnxruntime-from-source-untested">Building ONNXRuntime from source (untested)</a></h3>
+<p>You don't need to do this if you've downloaded ONNXRuntime.</p>
+<p>Follow the instructions here: https://onnxruntime.ai/docs/how-to/build/inferencing.html#linux</p>
+<p>then run</p>
+<pre><code>cd build/Linux/RelWithDebInfo/
+sudo make install
+</code></pre>
+<h3 id="building-aprilasr"><a class="header" href="#building-aprilasr">Building aprilasr</a></h3>
+<p>Run:</p>
+<pre><code>$ mkdir build
+$ cd build
+$ cmake -DCMAKE_BUILD_TYPE=Release ..
+$ make -j4
+</code></pre>
+<p>You should now have <code>main</code>, <code>libaprilasr.so</code> and <code>libaprilasr_static.so</code>.</p>
+<p>If running <code>main</code> fails because it can't find <code>libonnxruntime.so.1.13.1</code>, you may need to make <code>libonnxruntime.so.1.13.1</code> accessible like so:</p>
+<pre><code>$ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:`pwd`/../lib/lib/
+</code></pre>
+<h2 id="building-on-windows-msvc"><a class="header" href="#building-on-windows-msvc">Building on Windows (msvc)</a></h2>
+<p>Create a folder called <code>lib</code> in the april-asr folder.</p>
+<p>Download <a href="https://github.com/microsoft/onnxruntime/releases/download/v1.13.1/onnxruntime-win-x64-1.13.1.zip">onnxruntime-win-x64-1.13.1.zip</a> and extract the insides of the onnxruntime-win-x64-1.13.1 folder to the <code>lib</code> folder</p>
+<p>Run cmake to configure and generate Visual Studio project files. Make sure you select x64 as the target if you have downloaded the x64 version of ONNXRuntime.</p>
+<p>Open the <code>ALL_BUILD.vcxproj</code> and everything should build. The output will be in the Release or Debug folders.</p>
+<p>When running main.exe you may receive an error message like this:</p>
+<blockquote>
+<p>The application was unable to start correctly (0xc000007b)</p>
+</blockquote>
+<p>To fix this, you need to make onnxruntime.dll available. One way to do this is to copy onnxruntime.dll from lib/lib/onnxruntime.dll to build/Debug and build/Release. You may need to distribute the dll together with your application.</p>
+<h2 id="applications"><a class="header" href="#applications">Applications</a></h2>
+<p>Currently I'm developing <a href="https://github.com/abb128/LiveCaptions">Live Captions</a>, a Linux desktop app that provides live captioning.</p>
+<h2 id="acknowledgements"><a class="header" href="#acknowledgements">Acknowledgements</a></h2>
+<p>Thanks to the <a href="https://github.com/k2-fsa/icefall">k2-fsa/icefall</a> contributors for creating the speech recognition recipes and models.</p>
+<p>This project makes use of a few libraries:</p>
+<ul>
+<li>pocketfft, authored by Martin Reinecke, Copyright (C) 2008-2018 Max-Planck-Society, licensed under BSD-3-Clause</li>
+<li>Sonic library, authored by Bill Cox, Copyright (C) 2010 Bill Cox, licensed under Apache 2.0 license</li>
+<li>tinycthread, authored by Marcus Geelnard and Evan Nemerson, licensed under zlib/libpng license</li>
+</ul>
+<p>The bindings are based on the <a href="https://github.com/alphacep/vosk-api">Vosk API bindings</a>, which is another speech recognition library based on previous-generation Kaldi. Vosk is Copyright 2019 Alpha Cephei Inc. and licensed under the Apache 2.0 license.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="general-concepts"><a class="header" href="#general-concepts">General Concepts</a></h1>
+<p>Before writing any code, it's recommended to understand these concepts. These apply to all of the language bindings.</p>
+<h2 id="model"><a class="header" href="#model">Model</a></h2>
+<p><img src="./model.png" alt="Model Diagram" /></p>
+<p>Models end with the file extension <code>.april</code>. You can load these files using the AprilASR API.</p>
+<p>Each model has its own sample rate in which it expects audio. There is a method to get the expected sample rate. Usually, this is 16000 Hz.</p>
+<p>Models also have additional metadata such as name, description, language.</p>
+<p>After loading a model, you can create one or more sessions that use the model.</p>
+<h2 id="session"><a class="header" href="#session">Session</a></h2>
+<p><img src="./session.png" alt="Session Diagram" /></p>
+<p>In the most common case, you will have one session based on one model.</p>
+<p>The session is what performs the actual speech recognition. It has methods to input audio, and it calls your given handler with decoded results.</p>
+<!--(This feature is not yet implemented) When creating a session, you may specify a speaker ID or name. If not empty, this may be used to save and restore the hidden state, to help initialize the session in a way it can provide more accurate results instantly for a particular speaker. -->
+<h3 id="decoding"><a class="header" href="#decoding">Decoding</a></h3>
+<p><img src="./dataflow.png" alt="Data flow diagram" /></p>
+<p>To perform speech-to-text, feed PCM16 audio of the speech to the session through the <code>feed_pcm16</code> method (or equivalent in the language). Make sure it's in the correct sample rate and mono.</p>
+<p>PCM16 means array of shorts with values between -32768 to 32767, each one describing one sample.</p>
+<p>After calling <code>feed_pcm16</code>, the session will invoke the neural network and call your specified handler with a result. You can present this result to the user or do whatever you want with the result.</p>
+<h3 id="multiple-sessions"><a class="header" href="#multiple-sessions">Multiple sessions</a></h3>
+<p><img src="./multisession.png" alt="Multi-Session Diagram" /></p>
+<p>In more advanced use cases, you may have multiple sessions performing recognition on multiple separate audio streams. When doing this, you can re-use the same model to minimize the memory use.</p>
+<h3 id="async-vs-non-async"><a class="header" href="#async-vs-non-async">Async vs Non-Async</a></h3>
+<h4 id="synchronous-session-default"><a class="header" href="#synchronous-session-default">Synchronous session (default)</a></h4>
+<p><img src="./sync_session.png" alt="Synchronous session diagram" /></p>
+<p>The simplest (and default) mode of operation are synchronous sessions.</p>
+<p>In a synchronous session, when you call the function to feed audio, it will process the audio synchronously, call the handler if a new result is decoded, and finally return once it's done.</p>
+<p>This means that calls to feed audio are extremely slow. This may be undesirable in some cases, such as in a live captioning situation. For this reason, you can choose to construct asynchronous sessions instead.</p>
+<h4 id="asynchronous-session"><a class="header" href="#asynchronous-session">Asynchronous session</a></h4>
+<p><img src="./async_session.png" alt="Asynchronous session diagram" /></p>
+<p>An asynchronous session does not perform calculations on the calling thread.</p>
+<p>Calls to feed audio are quick, as it copies the data and triggers a second thread to do the actual calculations. The second thread calls the handler at some point, when processing is done.</p>
+<p>A caveat is that you must feed audio at a rate that comes out to 1 second per second. You should not feed multiple seconds or minutes at once. The internal buffer cannot fit more than a few seconds.</p>
+<p>Asynchronous sessions are intended for streaming audio as it comes in, for live captioning for example. If you feed more than 1 second every second, you will get poor results (if any).</p>
+<h3 id="async-realtime-vs-async-non-realtime"><a class="header" href="#async-realtime-vs-async-non-realtime">Async-Realtime vs Async-Non-Realtime</a></h3>
+<p>In an asynchronous session, there is a problem that the system may not be fast enough to process audio at the rate that it's coming in. This is where realtime and non-realtime sessions differ in behavior.</p>
+<p><img src="./realtime.png" alt="Realtime session diagram" /></p>
+<p>A realtime session will work around this by automatically deciding to speed up incoming audio to a rate where the system can keep up. This involves some audio processing code, which may or may not be desirable.</p>
+<p>Speeding up audio may reduce accuracy. It may not be severe at small values (such as 1.2x), but at larger values (such as over 2.0x) the accuracy may be severely impacted. There is a method you can call to get the current speedup value to know when this is happening, so you can display a warning to the user or similar.</p>
+<p>A non-realtime session ignores this problem and assumes the system is fast enough. If this is not the case, the results will fall behind, the internal buffer will get full, <code>ErrorCantKeepUp</code> result will be called, and the results will be disastrously horrible.</p>
+<h2 id="handler"><a class="header" href="#handler">Handler</a></h2>
+<p>The results are given via a callback (handler). It gets called by the session whenever it has new results. The parameters given to the callback include the result type and the token array.</p>
+<p>Note that in an asynchronous session, the handler will be called from a different thread. Be sure to expect this and write thread-safe code, or use a synchronous session.</p>
+<p>You should try to make your handler function fast to avoid slowing down the session.</p>
+<p>The actual text can be extracted from the token array.</p>
+<h3 id="result-type"><a class="header" href="#result-type">Result Type</a></h3>
+<p>The handler gets called with an enum explaining the result type:</p>
+<ul>
+<li>Partial Recognition - the token array is a partial result and an updated array will be given in the next call</li>
+<li>Final Recognition - the token array is final, the next call will start from an empty array</li>
+<li>Error Can't Keep Up - called in an asynchronous non-realtime session if the system is not fast enough, may also be called briefly in an asynchronous realtime session, the token array is empty or null</li>
+<li>Silence - there has been silence, the token array is empty or null</li>
+</ul>
+<h2 id="token"><a class="header" href="#token">Token</a></h2>
+<p>A token may be a single letter, a word chunk, an entire word, punctuation, or other arbitrary set of characters.</p>
+<p>To convert a token array to a string, simply concatenate the strings from each token. You don't need to add spaces between tokens, the tokens contain their own formatting.</p>
+<p><img src="tokens.png" alt="Token example list" /></p>
+<p>For example, the text <code>&quot;THAT'S COOL ELEPHANTS&quot;</code> may be represented as tokens like so:</p>
+<ul>
+<li><code>[&quot; THAT&quot;, &quot;'&quot;, &quot;S&quot;, &quot; CO&quot;, &quot;OL&quot;, &quot; E&quot;, &quot;LE&quot;, &quot;P&quot;, &quot;H&quot;, &quot;ANT&quot;, &quot;S&quot;]</code></li>
+<li>Simply concatenating these strings will give you the correct <code>&quot; THAT'S COOL ELEPHANTS&quot;</code>, but with an extra space at the beginning. You may want to strip the final string to avoid the extra space.</li>
+</ul>
+<p>Tokens contain more data than just the string however. They also contain the log probability, and a boolean denoting whether or not it's a word boundary. In English, the word boundary value is equivalent to checking if the first character is a space.</p>
+<h2 id="dependencies"><a class="header" href="#dependencies">Dependencies</a></h2>
+<p>AprilASR depends on ONNXRuntime for ML inference. You will need both libraries for it to work:</p>
+<ul>
+<li>Linux: <code>libaprilasr.so</code> and <code>libonnxruntime.so</code></li>
+<li>Windows: <code>libaprilasr.dll</code> and <code>onnxruntime.dll</code></li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="model-downloads"><a class="header" href="#model-downloads">Model Downloads</a></h1>
+<p>There are two published English models:</p>
+<ul>
+<li><a href="https://april.sapples.net/april-english-dev-01110_en.april">april-english-dev-01110_en.april</a> - trained with numbers and punctuation</li>
+<li><a href="https://april.sapples.net/aprilv0_en-us.april">aprilv0_en-us.april</a> - previous model with no numbers or punctuation, spells numbers as words, often incorrectly</li>
+</ul>
+<p>Some non-English models have been trained which are available for testing:</p>
+<ul>
+<li><a href="https://april.sapples.net/april-polish-dev-2_pl.april">april-polish-dev-2_pl.april</a> - Polish model, trained on Common Voice, 4.51% WER</li>
+<li><a href="https://april.sapples.net/april-french-dev-1_fr.april">april-french-dev-1_fr.april</a> - French model, trained on Common Voice, 8.75% WER</li>
+</ul>
+<p>All models are based on RNN-T (<code>lstm-transducer-stateless2</code> recipe on icefall)</p>
+<p>More models to come</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="python"><a class="header" href="#python">Python</a></h1>
+<h2 id="installation"><a class="header" href="#installation">Installation</a></h2>
+<p>Run <code>pip install april_asr</code></p>
+<h2 id="getting-started"><a class="header" href="#getting-started">Getting Started</a></h2>
+<p>To get started, import AprilASR</p>
+<pre><code class="language-py">import april_asr as april
+</code></pre>
+<h2 id="model-1"><a class="header" href="#model-1">Model</a></h2>
+<p>You can load a model like so:</p>
+<pre><code class="language-py">your_model_path = &quot;/path/to/model.april&quot;
+model = april.Model(your_model_path)
+</code></pre>
+<p>Models have a few metadata methods:</p>
+<pre><code class="language-py">name: str = model.get_name()
+description: str = model.get_description()
+language: str = model.get_language()
+sample_rate: int = model.get_sample_rate()
+</code></pre>
+<h2 id="session-1"><a class="header" href="#session-1">Session</a></h2>
+<p>Before creating a session, define a handler callback. Here is an example handler function that concatenates the tokens to a string and prints it:</p>
+<pre><code class="language-py">def handler(result_type, tokens):
+    s = &quot;&quot;
+    for token in tokens:
+        s = s + token.token
+    
+    if result_type == april.Result.FINAL_RECOGNITION:
+        print(&quot;@&quot;+s)
+    elif result_type == april.Result.PARTIAL_RECOGNITION:
+        print(&quot;-&quot;+s)
+    else:
+        print(&quot;&quot;)
+</code></pre>
+<p>Now, a session may be created:</p>
+<pre><code class="language-py">session = april.Session(model, handler)
+</code></pre>
+<h3 id="session-options"><a class="header" href="#session-options">Session Options</a></h3>
+<p>There are more options when it comes to creating a session, here is the initializer signature:</p>
+<pre><code class="language-py"> class Session (model: april_asr.Model, callback: Callable[[april_asr.Result, List[april_asr.Token]], None], asynchronous: bool = False, no_rt: bool = False, speaker_name: str = '')
+
+</code></pre>
+<p>Refer to the General Concepts page for an explanation on asynchronous, non-realtime, and speaker name options</p>
+<h2 id="feed-data"><a class="header" href="#feed-data">Feed data</a></h2>
+<p>Most of the examples use a very simple method like this to load and feed audio:</p>
+<pre><code class="language-py">with open(wav_file_path, &quot;rb&quot;) as f:
+    data = f.read()
+
+session.feed_pcm16(data)
+</code></pre>
+<p>This works only if the wav file is PCM16 and sampled in the correct sample rate. When you attempt to load an mp3, non-PCM16/non-16kHz wav file, or any other audio file in this way, you will likely get gibberish or no results.</p>
+<p>To load more arbitrary audio files, you can use a Python library that handles audio loading (make sure librosa is installed: <code>pip install librosa</code>):</p>
+<pre><code class="language-py">import librosa
+
+# Load the audio samples as numpy floats
+data, sr = librosa.load(&quot;/path/to/anything.mp3&quot;, sr=model.get_sample_rate(), mono=True)
+
+# Convert the floats to PCM16 bytes
+data = (data * 32767).astype(&quot;short&quot;).astype(&quot;&lt;u2&quot;).tobytes()
+
+session.feed_pcm16(data)
+</code></pre>
+<p>You can flush the session once the end of the file has been reached to force a final result:</p>
+<pre><code class="language-py">session.flush()
+</code></pre>
+<h2 id="asynchronous"><a class="header" href="#asynchronous">Asynchronous</a></h2>
+<p>Asynchronous sessions are a little more complicated. You can create one by setting the asynchronous flag to true:</p>
+<pre><code class="language-py">session = april.Session(model, handler, asynchronous=True)
+</code></pre>
+<p>Now, when feeding audio, be sure to feed it in realtime.</p>
+<pre><code class="language-py">import librosa
+import time
+
+data, sr = librosa.load(&quot;/path/to/anything.mp3&quot;, sr=model.get_sample_rate(), mono=True)
+data = (data * 32767).astype(&quot;short&quot;).astype(&quot;&lt;u2&quot;).tobytes()
+
+while len(data) &gt; 0:
+    chunk = data[:2400]
+    data = data[2400:]
+    
+    session.feed_pcm16(chunk)
+    if session.get_rt_speedup() &gt; 1.5:
+        print(&quot;Warning: System can't keep up, realtime speedup value of &quot; + str(session.get_rt_speedup()))
+
+    time.sleep(2400 / model.get_sample_rate())
+</code></pre>
+<h2 id="complete-example"><a class="header" href="#complete-example">Complete example</a></h2>
+<pre><code class="language-py">import april_asr as april
+import librosa
+
+# Change these values
+model_path = &quot;aprilv0_en-us.april&quot;
+audio_path = &quot;audio.wav&quot;
+
+model = april.Model(model_path)
+
+
+def handler(result_type, tokens):
+    s = &quot;&quot;
+    for token in tokens:
+        s = s + token.token
+    
+    if result_type == april.Result.FINAL_RECOGNITION:
+        print(&quot;@&quot;+s)
+    elif result_type == april.Result.PARTIAL_RECOGNITION:
+        print(&quot;-&quot;+s)
+    else:
+        print(&quot;&quot;)
+
+session = april.Session(model, handler)
+
+data, sr = librosa.load(audio_path, sr=model.get_sample_rate(), mono=True)
+data = (data * 32767).astype(&quot;short&quot;).astype(&quot;&lt;u2&quot;).tobytes()
+
+session.feed_pcm16(data)
+session.flush()
+
+</code></pre>
+<p>Congratulations! You have just performed speech recognition using AprilASR!</p>
+<div style="break-before: page; page-break-before: always;"></div><p>&lt;!doctype html&gt;</p>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.5">
+<title>april_asr API documentation</title>
+<meta name="description" content="april_asr provides Python bindings for the aprilasr library …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Package <code>april_asr</code></h1>
+</header>
+<section id="section-intro">
+<p>april_asr provides Python bindings for the aprilasr library.</p>
+<p>aprilasr provides an API for offline streaming speech-to-text applications, and
+enables low-latency on-device realtime speech recognition for live captioning
+or other speech recognition use cases.</p>
+</section>
+<section>
+<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+<dl>
+<dt><code class="name"><a title="april_asr.example" href="april_asr/example.html">april_asr.example</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="april_asr.Model"><code class="flex name class">
+<span>class <span class="ident">Model</span></span>
+<span>(</span><span>path: str)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Model:
+    &#34;&#34;&#34;
+    Models end with the file extension `.april`. You need to pass a path to
+    such a file to construct a Model type.
+<pre><code>Each model has its own sample rate in which it expects audio. There is a
+method to get the expected sample rate. Usually, this is 16000 Hz.
+
+Models also have additional metadata such as name, description, language.
+
+After loading a model, you can create one or more sessions that use the
+model.
+&amp;#34;&amp;#34;&amp;#34;
+def __init__(self, path: str):
+    self._handle = _c.ffi.aam_create_model(path)
+
+    if self._handle is None:
+        raise Exception(&amp;#34;Failed to load model&amp;#34;)
+
+def get_name(self) -&amp;gt; str:
+    &amp;#34;&amp;#34;&amp;#34;Get the name from the model&amp;#39;s metadata&amp;#34;&amp;#34;&amp;#34;
+    return _c.ffi.aam_get_name(self._handle)
+
+def get_description(self) -&amp;gt; str:
+    &amp;#34;&amp;#34;&amp;#34;Get the description from the model&amp;#39;s metadata&amp;#34;&amp;#34;&amp;#34;
+    return _c.ffi.aam_get_description(self._handle)
+
+def get_language(self) -&amp;gt; str:
+    &amp;#34;&amp;#34;&amp;#34;Get the language from the model&amp;#39;s metadata&amp;#34;&amp;#34;&amp;#34;
+    return _c.ffi.aam_get_language(self._handle)
+
+def get_sample_rate(self) -&amp;gt; int:
+    &amp;#34;&amp;#34;&amp;#34;Get the sample rate from the model&amp;#39;s metadata&amp;#34;&amp;#34;&amp;#34;
+    return _c.ffi.aam_get_sample_rate(self._handle)
+
+def __del__(self):
+    _c.ffi.aam_free(self._handle)
+    self._handle = None&lt;/code&gt;&lt;/pre&gt;
+</code></pre>
+</details>
+<div class="desc"><p>Models end with the file extension <code>.april</code>. You need to pass a path to
+such a file to construct a Model type.</p>
+<p>Each model has its own sample rate in which it expects audio. There is a
+method to get the expected sample rate. Usually, this is 16000 Hz.</p>
+<p>Models also have additional metadata such as name, description, language.</p>
+<p>After loading a model, you can create one or more sessions that use the
+model.</p></div>
+<h3 id="methods"><a class="header" href="#methods">Methods</a></h3>
+<dl>
+<dt id="april_asr.Model.get_description"><code class="name flex">
+<span>def <span class="ident">get_description</span></span>(<span>self) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_description(self) -&gt; str:
+    &#34;&#34;&#34;Get the description from the model&#39;s metadata&#34;&#34;&#34;
+    return _c.ffi.aam_get_description(self._handle)</code></pre>
+</details>
+<div class="desc"><p>Get the description from the model's metadata</p></div>
+</dd>
+<dt id="april_asr.Model.get_language"><code class="name flex">
+<span>def <span class="ident">get_language</span></span>(<span>self) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_language(self) -&gt; str:
+    &#34;&#34;&#34;Get the language from the model&#39;s metadata&#34;&#34;&#34;
+    return _c.ffi.aam_get_language(self._handle)</code></pre>
+</details>
+<div class="desc"><p>Get the language from the model's metadata</p></div>
+</dd>
+<dt id="april_asr.Model.get_name"><code class="name flex">
+<span>def <span class="ident">get_name</span></span>(<span>self) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_name(self) -&gt; str:
+    &#34;&#34;&#34;Get the name from the model&#39;s metadata&#34;&#34;&#34;
+    return _c.ffi.aam_get_name(self._handle)</code></pre>
+</details>
+<div class="desc"><p>Get the name from the model's metadata</p></div>
+</dd>
+<dt id="april_asr.Model.get_sample_rate"><code class="name flex">
+<span>def <span class="ident">get_sample_rate</span></span>(<span>self) ‑> int</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_sample_rate(self) -&gt; int:
+    &#34;&#34;&#34;Get the sample rate from the model&#39;s metadata&#34;&#34;&#34;
+    return _c.ffi.aam_get_sample_rate(self._handle)</code></pre>
+</details>
+<div class="desc"><p>Get the sample rate from the model's metadata</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="april_asr.Result"><code class="flex name class">
+<span>class <span class="ident">Result</span></span>
+<span>(</span><span>*args, **kwds)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Result(IntEnum):
+    &#34;&#34;&#34;
+    Result type that is passed to your handler
+    &#34;&#34;&#34;
+<pre><code>PARTIAL_RECOGNITION = 1,
+&amp;#34;&amp;#34;&amp;#34;A partial recognition. The next handler call will contain an updated
+list of tokens.&amp;#34;&amp;#34;&amp;#34;
+
+FINAL_RECOGNITION = 2,
+&amp;#34;&amp;#34;&amp;#34;A final recognition. The next handler call will start from an empty
+token list.&amp;#34;&amp;#34;&amp;#34;
+
+ERROR_CANT_KEEP_UP = 3,
+&amp;#34;&amp;#34;&amp;#34;In an asynchronous session, this may be called when the system can&amp;#39;t
+keep up with the incoming audio, and samples have been dropped. The
+accuracy will be affected. An empty token list is given&amp;#34;&amp;#34;&amp;#34;
+
+SILENCE = 4
+&amp;#34;&amp;#34;&amp;#34;Called after some silence. An empty token list is given&amp;#34;&amp;#34;&amp;#34;&lt;/code&gt;&lt;/pre&gt;
+</code></pre>
+</details>
+<div class="desc"><p>Result type that is passed to your handler</p></div>
+<h3 id="ancestors"><a class="header" href="#ancestors">Ancestors</a></h3>
+<ul class="hlist">
+<li>enum.IntEnum</li>
+<li>builtins.int</li>
+<li>enum.ReprEnum</li>
+<li>enum.Enum</li>
+</ul>
+<h3 id="class-variables"><a class="header" href="#class-variables">Class variables</a></h3>
+<dl>
+<dt id="april_asr.Result.ERROR_CANT_KEEP_UP"><code class="name">var <span class="ident">ERROR_CANT_KEEP_UP</span></code></dt>
+<dd>
+<div class="desc"><p>In an asynchronous session, this may be called when the system can't
+keep up with the incoming audio, and samples have been dropped. The
+accuracy will be affected. An empty token list is given</p></div>
+</dd>
+<dt id="april_asr.Result.FINAL_RECOGNITION"><code class="name">var <span class="ident">FINAL_RECOGNITION</span></code></dt>
+<dd>
+<div class="desc"><p>A final recognition. The next handler call will start from an empty
+token list.</p></div>
+</dd>
+<dt id="april_asr.Result.PARTIAL_RECOGNITION"><code class="name">var <span class="ident">PARTIAL_RECOGNITION</span></code></dt>
+<dd>
+<div class="desc"><p>A partial recognition. The next handler call will contain an updated
+list of tokens.</p></div>
+</dd>
+<dt id="april_asr.Result.SILENCE"><code class="name">var <span class="ident">SILENCE</span></code></dt>
+<dd>
+<div class="desc"><p>Called after some silence. An empty token list is given</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="april_asr.Session"><code class="flex name class">
+<span>class <span class="ident">Session</span></span>
+<span>(</span><span>model: april_asr.Model,<br>callback: Callable[[april_asr.Result, List[april_asr.Token]], None],<br>asynchronous: bool = False,<br>no_rt: bool = False,<br>speaker_name: str = '')</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Session:
+    &#34;&#34;&#34;
+    The session is what performs the actual speech recognition. It has
+    methods to input audio, and it calls your given handler with decoded
+    results.
+<pre><code>You need to pass a Model when constructing a Session.
+&amp;#34;&amp;#34;&amp;#34;
+def __init__(self,
+        model: Model,
+        callback: Callable[[Result, List[Token]], None],
+        asynchronous: bool = False,
+        no_rt: bool = False,
+        speaker_name: str = &amp;#34;&amp;#34;
+    ):
+    config = _c.AprilConfig()
+    config.flags = _c.AprilConfigFlagBits()
+
+    if asynchronous and no_rt:
+        config.flags.value = 2
+    elif asynchronous:
+        config.flags.value = 1
+    else:
+        config.flags.value = 0
+
+    if speaker_name != &amp;#34;&amp;#34;:
+        spkr_data = struct.pack(&amp;#34;@q&amp;#34;, hash(speaker_name)) * 2
+        config.speaker = _c.AprilSpeakerID.from_buffer_copy(spkr_data)
+
+    config.handler = _HANDLER
+    config.userdata = id(self)
+
+    self.model = model
+    self._handle = _c.ffi.aas_create_session(model._handle, config)
+    if self._handle is None:
+        raise Exception()
+
+    self.callback = callback
+
+def get_rt_speedup(self) -&amp;gt; float:
+    &amp;#34;&amp;#34;&amp;#34;
+    If the session is asynchronous and realtime, this will return a
+    positive float. A value below 1.0 means the session is keeping up, and
+    a value greater than 1.0 means the input audio is being sped up by that
+    factor in order to keep up. When the value is greater 1.0, the accuracy
+    is likely to be affected.
+    &amp;#34;&amp;#34;&amp;#34;
+    return _c.ffi.aas_realtime_get_speedup(self._handle)
+
+def feed_pcm16(self, data: bytes) -&amp;gt; None:
+    &amp;#34;&amp;#34;&amp;#34;
+    Feed the given pcm16 samples in bytes to the session. If the session is
+    asynchronous, this will return immediately and queue the data for the
+    background thread to process. If the session is not asynchronous, this
+    will block your thread and potentially call the handler before
+    returning.
+    &amp;#34;&amp;#34;&amp;#34;
+    _c.ffi.aas_feed_pcm16(self._handle, data)
+
+def flush(self) -&amp;gt; None:
+    &amp;#34;&amp;#34;&amp;#34;
+    Flush any remaining samples and force the session to produce a final
+    result.
+    &amp;#34;&amp;#34;&amp;#34;
+    _c.ffi.aas_flush(self._handle)
+
+def __del__(self):
+    _c.ffi.aas_free(self._handle)
+    self.model = None
+    self._handle = None&lt;/code&gt;&lt;/pre&gt;
+</code></pre>
+</details>
+<div class="desc"><p>The session is what performs the actual speech recognition. It has
+methods to input audio, and it calls your given handler with decoded
+results.</p>
+<p>You need to pass a Model when constructing a Session.</p></div>
+<h3 id="methods-1"><a class="header" href="#methods-1">Methods</a></h3>
+<dl>
+<dt id="april_asr.Session.feed_pcm16"><code class="name flex">
+<span>def <span class="ident">feed_pcm16</span></span>(<span>self, data: bytes) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def feed_pcm16(self, data: bytes) -&gt; None:
+    &#34;&#34;&#34;
+    Feed the given pcm16 samples in bytes to the session. If the session is
+    asynchronous, this will return immediately and queue the data for the
+    background thread to process. If the session is not asynchronous, this
+    will block your thread and potentially call the handler before
+    returning.
+    &#34;&#34;&#34;
+    _c.ffi.aas_feed_pcm16(self._handle, data)</code></pre>
+</details>
+<div class="desc"><p>Feed the given pcm16 samples in bytes to the session. If the session is
+asynchronous, this will return immediately and queue the data for the
+background thread to process. If the session is not asynchronous, this
+will block your thread and potentially call the handler before
+returning.</p></div>
+</dd>
+<dt id="april_asr.Session.flush"><code class="name flex">
+<span>def <span class="ident">flush</span></span>(<span>self) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def flush(self) -&gt; None:
+    &#34;&#34;&#34;
+    Flush any remaining samples and force the session to produce a final
+    result.
+    &#34;&#34;&#34;
+    _c.ffi.aas_flush(self._handle)</code></pre>
+</details>
+<div class="desc"><p>Flush any remaining samples and force the session to produce a final
+result.</p></div>
+</dd>
+<dt id="april_asr.Session.get_rt_speedup"><code class="name flex">
+<span>def <span class="ident">get_rt_speedup</span></span>(<span>self) ‑> float</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_rt_speedup(self) -&gt; float:
+    &#34;&#34;&#34;
+    If the session is asynchronous and realtime, this will return a
+    positive float. A value below 1.0 means the session is keeping up, and
+    a value greater than 1.0 means the input audio is being sped up by that
+    factor in order to keep up. When the value is greater 1.0, the accuracy
+    is likely to be affected.
+    &#34;&#34;&#34;
+    return _c.ffi.aas_realtime_get_speedup(self._handle)</code></pre>
+</details>
+<div class="desc"><p>If the session is asynchronous and realtime, this will return a
+positive float. A value below 1.0 means the session is keeping up, and
+a value greater than 1.0 means the input audio is being sped up by that
+factor in order to keep up. When the value is greater 1.0, the accuracy
+is likely to be affected.</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="april_asr.Token"><code class="flex name class">
+<span>class <span class="ident">Token</span></span>
+<span>(</span><span>token)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Token:
+    &#34;&#34;&#34;
+    A token may be a single letter, a word chunk, an entire word, punctuation,
+    or other arbitrary set of characters.
+<pre><code>To convert a token array to a string, simply concatenate the strings from
+each token. You don&amp;#39;t need to add spaces between tokens, the tokens
+contain their own formatting.
+
+Tokens also contain the log probability, and a boolean denoting whether or
+not it&amp;#39;s a word boundary. In English, the word boundary value is equivalent
+to checking if the first character is a space.
+&amp;#34;&amp;#34;&amp;#34;
+
+token: str = &amp;#34;&amp;#34;
+logprob: float = 0.0
+word_boundary: bool = False
+sentence_end: bool = False
+time: float = 0.0
+
+def __init__(self, token):
+    self.token = token.token.decode(&amp;#34;utf-8&amp;#34;)
+    self.logprob = token.logprob
+    self.word_boundary = (token.flags.value &amp;amp; 1) != 0
+    self.sentence_end = (token.flags.value &amp;amp; 2) != 0
+    self.time = float(token.time_ms) / 1000.0&lt;/code&gt;&lt;/pre&gt;
+</code></pre>
+</details>
+<div class="desc"><p>A token may be a single letter, a word chunk, an entire word, punctuation,
+or other arbitrary set of characters.</p>
+<p>To convert a token array to a string, simply concatenate the strings from
+each token. You don't need to add spaces between tokens, the tokens
+contain their own formatting.</p>
+<p>Tokens also contain the log probability, and a boolean denoting whether or
+not it's a word boundary. In English, the word boundary value is equivalent
+to checking if the first character is a space.</p></div>
+<h3 id="class-variables-1"><a class="header" href="#class-variables-1">Class variables</a></h3>
+<dl>
+<dt id="april_asr.Token.logprob"><code class="name">var <span class="ident">logprob</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="april_asr.Token.sentence_end"><code class="name">var <span class="ident">sentence_end</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="april_asr.Token.time"><code class="name">var <span class="ident">time</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="april_asr.Token.token"><code class="name">var <span class="ident">token</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="april_asr.Token.word_boundary"><code class="name">var <span class="ident">word_boundary</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3 id="sub-modules"><a class="header" href="#sub-modules"><a href="april_asr/index.html#header-submodules">Sub-modules</a></a></h3>
+<ul>
+<li><code><a title="april_asr.example" href="april_asr/example.html">april_asr.example</a></code></li>
+</ul>
+</li>
+<li><h3 id="classes"><a class="header" href="#classes"><a href="april_asr/index.html#header-classes">Classes</a></a></h3>
+<ul>
+<li>
+<h4 id="model-2"><a class="header" href="#model-2"><code><a title="april_asr.Model" href="april_asr/index.html#april_asr.Model">Model</a></code></a></h4>
+<ul class="">
+<li><code><a title="april_asr.Model.get_description" href="april_asr/index.html#april_asr.Model.get_description">get_description</a></code></li>
+<li><code><a title="april_asr.Model.get_language" href="april_asr/index.html#april_asr.Model.get_language">get_language</a></code></li>
+<li><code><a title="april_asr.Model.get_name" href="april_asr/index.html#april_asr.Model.get_name">get_name</a></code></li>
+<li><code><a title="april_asr.Model.get_sample_rate" href="april_asr/index.html#april_asr.Model.get_sample_rate">get_sample_rate</a></code></li>
+</ul>
+</li>
+<li>
+<h4 id="result"><a class="header" href="#result"><code><a title="april_asr.Result" href="april_asr/index.html#april_asr.Result">Result</a></code></a></h4>
+<ul class="">
+<li><code><a title="april_asr.Result.ERROR_CANT_KEEP_UP" href="april_asr/index.html#april_asr.Result.ERROR_CANT_KEEP_UP">ERROR_CANT_KEEP_UP</a></code></li>
+<li><code><a title="april_asr.Result.FINAL_RECOGNITION" href="april_asr/index.html#april_asr.Result.FINAL_RECOGNITION">FINAL_RECOGNITION</a></code></li>
+<li><code><a title="april_asr.Result.PARTIAL_RECOGNITION" href="april_asr/index.html#april_asr.Result.PARTIAL_RECOGNITION">PARTIAL_RECOGNITION</a></code></li>
+<li><code><a title="april_asr.Result.SILENCE" href="april_asr/index.html#april_asr.Result.SILENCE">SILENCE</a></code></li>
+</ul>
+</li>
+<li>
+<h4 id="session-2"><a class="header" href="#session-2"><code><a title="april_asr.Session" href="april_asr/index.html#april_asr.Session">Session</a></code></a></h4>
+<ul class="">
+<li><code><a title="april_asr.Session.feed_pcm16" href="april_asr/index.html#april_asr.Session.feed_pcm16">feed_pcm16</a></code></li>
+<li><code><a title="april_asr.Session.flush" href="april_asr/index.html#april_asr.Session.flush">flush</a></code></li>
+<li><code><a title="april_asr.Session.get_rt_speedup" href="april_asr/index.html#april_asr.Session.get_rt_speedup">get_rt_speedup</a></code></li>
+</ul>
+</li>
+<li>
+<h4 id="token-1"><a class="header" href="#token-1"><code><a title="april_asr.Token" href="april_asr/index.html#april_asr.Token">Token</a></code></a></h4>
+<ul class="">
+<li><code><a title="april_asr.Token.logprob" href="april_asr/index.html#april_asr.Token.logprob">logprob</a></code></li>
+<li><code><a title="april_asr.Token.sentence_end" href="april_asr/index.html#april_asr.Token.sentence_end">sentence_end</a></code></li>
+<li><code><a title="april_asr.Token.time" href="april_asr/index.html#april_asr.Token.time">time</a></code></li>
+<li><code><a title="april_asr.Token.token" href="april_asr/index.html#april_asr.Token.token">token</a></code></li>
+<li><code><a title="april_asr.Token.word_boundary" href="april_asr/index.html#april_asr.Token.word_boundary">word_boundary</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.5</a>.</p>
+</footer>
+</body>
+</html>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="c"><a class="header" href="#c">C#</a></h1>
+<h2 id="installation-1"><a class="header" href="#installation-1">Installation</a></h2>
+<p>Install the nuget package from <a href="https://www.nuget.org/packages/AprilAsr">https://www.nuget.org/packages/AprilAsr</a></p>
+<h2 id="getting-started-1"><a class="header" href="#getting-started-1">Getting Started</a></h2>
+<p>To get started, import AprilAsr</p>
+<pre><code class="language-cs">using AprilAsr;
+</code></pre>
+<h2 id="model-3"><a class="header" href="#model-3">Model</a></h2>
+<p>You can load a model like so:</p>
+<pre><code class="language-cs">string modelPath = &quot;/path/to/model.april&quot;; 
+AprilModel model = new AprilModel(modelPath);
+</code></pre>
+<p>Models have a few metadata fields:</p>
+<pre><code class="language-cs">string name = model.Name;
+string description = model.Description;
+string language = model.Language;
+int sampleRate = model.SampleRate;
+</code></pre>
+<h2 id="session-3"><a class="header" href="#session-3">Session</a></h2>
+<p>A session needs a callback. You can define one inline, this example concatenates the tokens to a string and prints it.</p>
+<pre><code class="language-cs">AprilSession session = new AprilSession(model, (result, tokens) =&gt; {
+    if (tokens == null) return;
+
+    string s = &quot;&quot;;
+    if(result == AprilResultKind.PartialRecognition) {
+        s = &quot;- &quot;;
+    }else if(result == AprilResultKind.FinalRecognition) {
+        s = &quot;@ &quot;;
+    }else{
+        s = &quot; &quot;;
+    }
+
+    foreach(AprilToken token in tokens) {
+        s += token.Token;
+    }
+
+    Console.WriteLine(s);
+});
+</code></pre>
+<h3 id="session-options-1"><a class="header" href="#session-options-1">Session Options</a></h3>
+<p>There are more options when it comes to creating a session, here is the initializer signature:</p>
+<pre><code class="language-cs">public AprilSession(AprilModel model, SessionCallback callback, bool async = false, bool noRT = false, string speakerName = &quot;&quot;) {
+</code></pre>
+<p>Refer to the General Concepts page for an explanation on asynchronous, non-realtime, and speaker name options</p>
+<h2 id="feed-data-1"><a class="header" href="#feed-data-1">Feed data</a></h2>
+<p>Most of the examples use a very simple method like this to load and feed audio:</p>
+<pre><code class="language-cs">// Read the file data (assumes wav file is 16-bit PCM wav)
+var fileData = File.ReadAllBytes(wavFilePath);
+short[] shorts = new short[fileData.Length / 2];
+Buffer.BlockCopy(fileData, 0, shorts, 0, fileData.Length);
+
+// Feed the data
+session.FeedPCM16(shorts, shorts.Length);
+</code></pre>
+<p>This works only if the wav file is PCM16 and sampled in the correct sample rate. When you attempt to load an mp3, non-PCM16/non-16kHz wav file, or any other audio file in this way, you will likely get gibberish or no results.</p>
+<!--
+To load more arbitrary audio files, you can use a Python library that handles audio loading (make sure librosa is installed: `pip install librosa`):
+
+```py
+import librosa
+
+# Load the audio samples as numpy floats
+data, sr = librosa.load("/path/to/anything.mp3", sr=model.get_sample_rate(), mono=True)
+
+# Convert the floats to PCM16 bytes
+data = (data * 32767).astype("short").astype("<u2").tobytes()
+
+session.feed_pcm16(data)
+```
+
+
+You can flush the session once the end of the file has been reached to force a final result:
+```py
+session.flush()
+```
+-->
+<h2 id="asynchronous-1"><a class="header" href="#asynchronous-1">Asynchronous</a></h2>
+<p>Asynchronous sessions are a little more complicated. You can create one by setting the asynchronous flag to true:</p>
+<pre><code class="language-cs">AprilSession session = new AprilSession(..., async: true);
+</code></pre>
+<p>Now, when feeding audio, be sure to feed it in realtime.</p>
+<pre><code class="language-cs">var fileData = File.ReadAllBytes(wavFilePath);
+short[] shorts = new short[2400];
+
+for(int i=0; i&lt;(fileData.Length/2); i+=shorts.Length){
+    int size = Math.Min(shorts.Length, (fileData.Length/2) - i);
+    Buffer.BlockCopy(fileData, i*2, shorts, 0, size*2);
+    session.FeedPCM16(shorts, size);
+    Thread.Sleep(size * 1000 / model.SampleRate);
+}
+
+session.Flush();
+</code></pre>
+<h2 id="complete-example-1"><a class="header" href="#complete-example-1">Complete example</a></h2>
+<pre><code class="language-cs">using AprilAsr;
+
+var modelPath = &quot;aprilv0_en-us.april&quot;;
+var wavFilePath = &quot;audio.wav&quot;;
+
+// Load the model and print metadata
+var model = new AprilModel(modelPath);
+Console.WriteLine(&quot;Name: &quot; + model.Name);
+Console.WriteLine(&quot;Description: &quot; + model.Description);
+Console.WriteLine(&quot;Language: &quot; + model.Language);
+
+// Create the session with an inline callback
+var session = new AprilSession(model, (result, tokens) =&gt; {
+    string s = &quot;&quot;;
+    if(result == AprilResultKind.PartialRecognition) {
+        s = &quot;- &quot;;
+    }else if(result == AprilResultKind.FinalRecognition) {
+        s = &quot;@ &quot;;
+    }else{
+        s = &quot; &quot;;
+    }
+
+    foreach(AprilToken token in tokens) {
+        s += token.Token;
+    }
+
+    Console.WriteLine(s);
+});
+
+// Read the file data (assumes wav file is 16-bit PCM wav)
+var fileData = File.ReadAllBytes(wavFilePath);
+short[] shorts = new short[fileData.Length / 2];
+Buffer.BlockCopy(fileData, 0, shorts, 0, fileData.Length);
+
+// Feed the data and flush
+session.FeedPCM16(shorts, shorts.Length);
+session.Flush();
+</code></pre>
+<p>Congratulations! You have just performed speech recognition using AprilAsr!</p>
+<div style="break-before: page; page-break-before: always;"></div><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US">
+<head>
+<meta http-equiv="Content-Type" content="text/xhtml;charset=UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=11"/>
+<meta name="generator" content="Doxygen 1.9.8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>AprilAsr: AprilAsr Namespace Reference</title>
+<link href="tabs.css" rel="stylesheet" type="text/css"/>
+<script type="text/javascript" src="jquery.js"></script>
+<script type="text/javascript" src="dynsections.js"></script>
+<link href="doxygen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="top"><!-- do not remove this div, it is closed by doxygen! -->
+<div id="titlearea">
+<table cellspacing="0" cellpadding="0">
+ <tbody>
+ <tr id="projectrow">
+  <td id="projectalign">
+   <div id="projectname">AprilAsr
+   </div>
+  </td>
+ </tr>
+ </tbody>
+</table>
+</div>
+<!-- end header part -->
+<!-- Generated by Doxygen 1.9.8 -->
+</div><!-- top -->
+<div class="header">
+  <div class="summary">
+<a href="csharp/html/namespace_april_asr.html#nested-classes">Classes</a> &#124;
+<a href="csharp/html/namespace_april_asr.html#enum-members">Enumerations</a> &#124;
+<a href="csharp/html/namespace_april_asr.html#func-members">Functions</a>  </div>
+  <div class="headertitle"><div class="title">AprilAsr Namespace Reference</div></div>
+</div><!--header-->
+<div class="contents">
+<table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="csharp/html/class_april_asr_1_1_april_model.html">AprilModel</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Models end with the file extension <code>.april</code>. You need to pass a path to such a file to construct a Model type.  <a href="csharp/html/class_april_asr_1_1_april_model.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="csharp/html/class_april_asr_1_1_april_session.html">AprilSession</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">The session is what performs the actual speech recognition. It has methods to input audio, and it calls your given handler with decoded results.  <a href="csharp/html/class_april_asr_1_1_april_session.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="csharp/html/struct_april_asr_1_1_april_token.html">AprilToken</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">A token may be a single letter, a word chunk, an entire word, punctuation, or other arbitrary set of characters.  <a href="csharp/html/struct_april_asr_1_1_april_token.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="enum-members" name="enum-members"></a>
+Enumerations</h2></td></tr>
+<tr class="memitem:af6e6e596545e18a9a84a979fa071809f" id="r_af6e6e596545e18a9a84a979fa071809f"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="csharp/html/namespace_april_asr.html#af6e6e596545e18a9a84a979fa071809f">AprilResultKind</a> : int { <a class="el" href="csharp/html/namespace_april_asr.html#af6e6e596545e18a9a84a979fa071809fac40c0b96cef37e2c8b94eeadb1582185">PartialRecognition</a> = 1
+, <a class="el" href="csharp/html/namespace_april_asr.html#af6e6e596545e18a9a84a979fa071809fae8b2e123c19f4a854eebdf3ec728d3e4">FinalRecognition</a> = 2
+, <a class="el" href="csharp/html/namespace_april_asr.html#af6e6e596545e18a9a84a979fa071809fad39bae4214d06e0e5d6eebe6f689fabc">ErrorCantKeepUp</a> = 3
+, <a class="el" href="csharp/html/namespace_april_asr.html#af6e6e596545e18a9a84a979fa071809fa880a7ef20988e107cb918e73bd969bd1">Silence</a> = 4
+ }</td></tr>
+<tr class="memdesc:af6e6e596545e18a9a84a979fa071809f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Result type that is passed to your handler.  <a href="csharp/html/namespace_april_asr.html#af6e6e596545e18a9a84a979fa071809f">More...</a><br /></td></tr>
+<tr class="separator:af6e6e596545e18a9a84a979fa071809f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:a0e51c92a8a9bbd9ef62a24659c415d18" id="r_a0e51c92a8a9bbd9ef62a24659c415d18"><td class="memItemLeft" align="right" valign="top"><a id="a0e51c92a8a9bbd9ef62a24659c415d18" name="a0e51c92a8a9bbd9ef62a24659c415d18"></a>
+delegate void&#160;</td><td class="memItemRight" valign="bottom"><b>SessionCallback</b> (<a class="el" href="csharp/html/namespace_april_asr.html#af6e6e596545e18a9a84a979fa071809f">AprilResultKind</a> kind, <a class="el" href="csharp/html/struct_april_asr_1_1_april_token.html">AprilToken</a>[] tokens)</td></tr>
+<tr class="memdesc:a0e51c92a8a9bbd9ef62a24659c415d18"><td class="mdescLeft">&#160;</td><td class="mdescRight">Session callback type. You must provide one of such type when constructing a session. <br /></td></tr>
+<tr class="separator:a0e51c92a8a9bbd9ef62a24659c415d18"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table>
+<h2 class="groupheader">Enumeration Type Documentation</h2>
+<a id="af6e6e596545e18a9a84a979fa071809f" name="af6e6e596545e18a9a84a979fa071809f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="csharp/html/namespace_april_asr.html#af6e6e596545e18a9a84a979fa071809f">&#9670;&#160;</a></span>AprilResultKind</h2>
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="csharp/html/namespace_april_asr.html#af6e6e596545e18a9a84a979fa071809f">AprilAsr.AprilResultKind</a> : int</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<p>Result type that is passed to your handler. </p>
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="af6e6e596545e18a9a84a979fa071809fac40c0b96cef37e2c8b94eeadb1582185" name="af6e6e596545e18a9a84a979fa071809fac40c0b96cef37e2c8b94eeadb1582185"></a>PartialRecognition&#160;</td><td class="fielddoc"><p>A partial recognition. The next handler call will contain an updated list of tokens. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="af6e6e596545e18a9a84a979fa071809fae8b2e123c19f4a854eebdf3ec728d3e4" name="af6e6e596545e18a9a84a979fa071809fae8b2e123c19f4a854eebdf3ec728d3e4"></a>FinalRecognition&#160;</td><td class="fielddoc"><p>A final recognition. The next handler call will start from an empty token list. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="af6e6e596545e18a9a84a979fa071809fad39bae4214d06e0e5d6eebe6f689fabc" name="af6e6e596545e18a9a84a979fa071809fad39bae4214d06e0e5d6eebe6f689fabc"></a>ErrorCantKeepUp&#160;</td><td class="fielddoc"><p>In an asynchronous session, this may be called when the system can't keep up with the incoming audio, and samples have been dropped. The accuracy will be affected. An empty token list is given. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="af6e6e596545e18a9a84a979fa071809fa880a7ef20988e107cb918e73bd969bd1" name="af6e6e596545e18a9a84a979fa071809fa880a7ef20988e107cb918e73bd969bd1"></a>Silence&#160;</td><td class="fielddoc"><p>Called after some silence. An empty token list is given. </p>
+</td></tr>
+</table>
+</div>
+</div>
+</div><!-- contents -->
+<!-- start footer part -->
+<hr class="footer"/><address class="footer"><small>
+Generated by&#160;<a href="https://www.doxygen.org/index.html"><img class="footer" src="csharp/html/doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8
+</small></address>
+</body>
+</html>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+    </div>
+    </body>
+</html>
