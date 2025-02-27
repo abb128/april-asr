@@ -5,14 +5,50 @@
 [Documentation](https://abb128.github.io/april-asr/concepts.html)
 
 ## Status
-This library is currently under development. Some features are unimplemented, it may have bugs and crashes, and there may be significant changes to the API. It may not yet be production-ready.
+This library is currently facing some major rewrites over 2025 to improve efficiency and properly fulfill the API contract of multi-session support. The model format is going to change.
 
-Furthermore, there's only one model that only does English and has some accuracy issues at that.
+## Language support
+The core library is written in C, and has a C API. [Python](https://abb128.github.io/april-asr/python.html) and [C#](https://abb128.github.io/april-asr/csharp.html) bindings are available.
 
-### Language support
-The library has a C API, and there are C# and Python bindings available, but these may not be stable yet.
+## Example in Python
 
-## Example
+Install via `pip install april-asr`
+
+```py
+import april_asr as april
+import librosa
+
+# Change these values
+model_path = "aprilv0_en-us.april"
+audio_path = "audio.wav"
+
+model = april.Model(model_path)
+
+
+def handler(result_type, tokens):
+    s = ""
+    for token in tokens:
+        s = s + token.token
+    
+    if result_type == april.Result.FINAL_RECOGNITION:
+        print("@"+s)
+    elif result_type == april.Result.PARTIAL_RECOGNITION:
+        print("-"+s)
+    else:
+        print("")
+
+session = april.Session(model, handler)
+
+data, sr = librosa.load(audio_path, sr=model.get_sample_rate(), mono=True)
+data = (data * 32767).astype("short").astype("<u2").tobytes()
+
+session.feed_pcm16(data)
+session.flush()
+```
+
+Read the [Python documentation here](https://abb128.github.io/april-asr/python.html).
+
+## Example in C
 An example use of this library is provided in `example.cpp`. It can perform speech recognition on a wave file, or do streaming recognition by reading stdin.
 
 It's built as the target `main`. After building aprilasr, you can run it like so:
@@ -20,18 +56,20 @@ It's built as the target `main`. After building aprilasr, you can run it like so
 $ ./main /path/to/file.wav /path/to/model.april
 ```
 
-For streaming recognition, you can pipe parec into it:
+For streaming recognition, you can pipe parec into it. The command below will live caption your desktop audio.
 ```
-$ parec --format=s16 --rate=16000 --channels=1 --latency-ms=100 | ./main - /path/to/model.april
+$ parec --format=s16 --rate=16000 --channels=1 --latency-ms=100 --device=@DEFAULT_MONITOR@ | ./main - /path/to/model.april
 ```
 
 ## Models
-Currently only one model is available, the [English model](https://april.sapples.net/aprilv0_en-us.april), based on [csukuangfj's trained icefall model](https://huggingface.co/csukuangfj/icefall-asr-librispeech-lstm-transducer-stateless2-2022-09-03/tree/main/exp) as the base, and trained with some extra data.
+A few models are available, listed [here](https://abb128.github.io/april-asr/models.html). 
 
-To make your own models, check out `extra/exporting-howto.md`
+The English models are based on [csukuangfj's trained icefall model](https://huggingface.co/csukuangfj/icefall-asr-librispeech-lstm-transducer-stateless2-2022-09-03/tree/main/exp) as the base, and trained with some extra data.
+
+To export your own models, check out `extra/exporting-howto.md`
 
 ## Building on Linux
-Building requires ONNXRuntime v1.13.1. You can either try to build it from source or just download the release binaries.
+Building requires ONNXRuntime. You can either try to build it from source or just download the release binaries.
 
 ### Downloading ONNXRuntime
 Run `./download_onnx_linux_x64.sh` for linux-x64.

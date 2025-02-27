@@ -1,3 +1,6 @@
+// For basic live captioning of desktop audio, run it like so:
+// parec --format=s16 --rate=16000 --channels=1 --latency-ms=100 --device=@DEFAULT_MONITOR@ | ./main - /path/to/model.april
+
 #include <stdio.h>
 #include <cstdlib>
 #include <cstring>
