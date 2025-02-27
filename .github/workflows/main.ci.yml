@@ -142,7 +142,7 @@ jobs:
           packages: mono-mcs nuget
 
       - name: Ensure nuget is installed
-        run: apt install -y nuget
+        run: sudo apt-get install -y nuget
         working-directory: ${{github.workspace}}
       
       - name: Download Linux aprilasr
