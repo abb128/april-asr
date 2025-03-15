@@ -129,7 +129,12 @@ if((NOT HAVE_C11_THREADS) OR (DEFINED USE_TINYCTHREAD))
 endif()
 
 if(NOT WIN32)
-  list(APPEND april_link_libraries "pthread")
+  if (UNIX)
+    find_library(LIBPTHREAD pthread)
+    if (LIBPTHREAD)
+      list(APPEND april_link_libraries "pthread")
+    endif()
+  endif()
   list(APPEND april_link_libraries "m")
 endif()
 
