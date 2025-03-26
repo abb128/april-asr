@@ -1,0 +1,33 @@
+[package]
+name = "april_asr"
+version = "0.1.31"
+edition = "2021"
+authors = ["fastfists <fdenzell@gmail.com>", "abb128"]
+
+license = "GPL-3.0"
+readme = "README.md"
+documentation = "https://docs.rs/april_asr"
+repository = "https://github.com/abb128/april-asr"
+description = "Offline open source speech recognition API based on next-generation Kaldi"
+
+[dependencies]
+libc = "0.2.144"
+
+[build-dependencies]
+bindgen = "0.65.1"
+flate2 = "1.0.26"
+tar = "0.4.38"
+ureq = "2.6.2"
+
+[features]
+default = []
+
+# Disable build script, used to prevent issues with docs.rs
+disable-sys-build-script = []
+
+
+[package.metadata.docs.rs]
+# Disable the build.rs on https://docs.rs since it can cause
+# issue there and it's not needed.
+features = ["disable-sys-build-script"]
+
