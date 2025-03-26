@@ -1,0 +1,45 @@
+{
+  "name": "april-asr",
+  "version": "0.0.1",
+  "description": "Node bindings for aprilasr",
+  "author": {
+    "name" : "Steven Linn",
+    "email" : "smlucf@gmail.com"
+  },
+  "main": "build/src/index.js",
+  "types": "build/src/index.d.ts",
+  "files": [
+    "build/src",
+    "build/Release"
+  ],
+  "license": "Apache-2.0",
+  "keywords": [],
+  "dependencies": {
+    "@types/ffi-napi": "^4.0.7",
+    "@types/ref-array-di": "^1.2.5",
+    "@types/ref-napi": "^3.0.7",
+    "@types/ref-struct-di": "^1.1.8",
+    "ref-array-di": "^1.2.2",
+    "ref-napi": "^3.0.3",
+    "ref-struct-di": "^1.1.1"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.1",
+    "prism-media": "^2.0.0-alpha.0",
+    "ffi-napi": "^4.0.3",
+    "ffmpeg-static": "^5.1.0",
+    "@types/node": "^14.11.2",
+    "gts": "^3.1.1",
+    "typescript": "~4.7.0"
+  },
+  "scripts": {
+    "ts": "ts-node examples/example.ts",
+    "lint": "gts lint",
+    "clean": "gts clean",
+    "compile": "tsc",
+    "fix": "gts fix",
+    "prepare": "npm.cmd run compile",
+    "pretest": "npm.cmd run compile",
+    "posttest": "npm.cmd run lint"
+  }
+}
