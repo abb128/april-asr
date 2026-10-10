@@ -1,233 +1,212 @@
-// For basic live captioning of desktop audio, run it like so:
-// parec --format=s16 --rate=16000 --channels=1 --latency-ms=100 --device=@DEFAULT_MONITOR@ | ./main - /path/to/model.april
-
-#include <stdio.h>
+// Offline and streaming April ASR runner; no sound server dependency.
+#include "april_api.h"
+#include <algorithm>
+#include <cerrno>
+#include <chrono>
+#include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <assert.h>
-#include <time.h>
-#include <errno.h>
-#include "april_api.h"
-
-#ifndef _MSC_VER
-#include <unistd.h>
-#else
+#include <string>
+#include <thread>
+#include <vector>
+#ifdef _WIN32
 #include <io.h>
-#include <BaseTsd.h>
-#define STDIN_FILENO 0
-typedef SSIZE_T ssize_t;
+#include <fcntl.h>
 #endif
-
-#define BUFFER_SIZE 1024
-int ends_with(const char *str, const char *suffix);
-
-struct wav_header {
-    // RIFF Header
-    char riff_header[4]; // Contains "RIFF"
-    uint32_t wav_size; // Size of the wav portion of the file, which follows the first 8 bytes. File size - 8
-    char wave_header[4]; // Contains "WAVE"
-    
-    // Format Header
-    char fmt_header[4]; // Contains "fmt " (includes trailing space)
-    int32_t fmt_chunk_size; // Should be 16 for PCM
-    int16_t audio_format; // Should be 1 for PCM. 3 for IEEE Float
-    int16_t num_channels;
-    int32_t sample_rate;
-    int32_t byte_rate; // Number of bytes per second. sample_rate * num_channels * Bytes Per Sample
-    int16_t sample_alignment; // num_channels * Bytes Per Sample
-    int16_t bit_depth; // Number of bits per sample
-    
-    // Data
-    char data_header[4]; // Contains "data"
-    uint32_t data_bytes; // Number of bytes in data. Number of samples * num_channels * sample byte size
+using Clock = std::chrono::steady_clock;
+static double ms(Clock::duration d) { return std::chrono::duration<double, std::milli>(d).count(); }
+static void env(const char *key, const std::string &value) {
+#ifdef _WIN32
+    _putenv_s(key, value.c_str());
+#else
+    setenv(key, value.c_str(), 1);
+#endif
+}
+static std::string json_quote(const std::string &s) {
+    std::string out = "\"";
+    for (unsigned char c : s) {
+        if (c == '\\' || c == '"') { out += '\\'; out += c; }
+        else if (c == '\n') out += "\\n";
+        else if (c == '\r') out += "\\r";
+        else if (c == '\t') out += "\\t";
+        else if (c < 32) { char hex[7]; std::snprintf(hex, sizeof(hex), "\\u%04x", c); out += hex; }
+        else out += c;
+    }
+    return out + '"';
+}
+struct Results {
+    bool json = false, benchmark = false, error = false;
+    Clock::time_point start;
+    double first_ms = -1;
+    size_t first_audio_ms = 0;
+    std::string transcript;
 };
-
-static_assert(sizeof(wav_header) == 44L, "wav header must be 44 bytes");
-
-// In this example, the internal state is just a global struct just for testing
-// In your program you can pass any pointer into userdata to access it in the
-// handler
-struct {
-    int xyz;
-} some_internal_state;
-
-// This callback function will get called every time a new result is decoded.
-// It's passed into the AprilConfig along with the userdata pointer.
-void handler(void *userdata, AprilResultType result, size_t count, const AprilToken *tokens) {
-    assert(userdata == &some_internal_state);
-
-    switch(result){
-        case APRIL_RESULT_RECOGNITION_FINAL: 
-            printf("@ ");
-            break;
-        case APRIL_RESULT_RECOGNITION_PARTIAL:
-            printf("- ");
-            break;
-        case APRIL_RESULT_SILENCE:
-            break;
-        default:
-            assert(false);
-            return;
+static void handler(void *arg, AprilResultType result, size_t count, const AprilToken *tokens) {
+    auto &state = *static_cast<Results *>(arg);
+    std::string text;
+    for (size_t i = 0; i < count; ++i) text += tokens[i].token;
+    if (count && state.first_ms < 0) {
+        state.first_ms = ms(Clock::now() - state.start);
+        state.first_audio_ms = tokens[0].time_ms;
     }
-
-    for(int t=0; t<count; t++){
-        const char *text = tokens[t].token;
-        printf("%s", text);
+    const char *kind = "unknown";
+    switch (result) {
+    case APRIL_RESULT_RECOGNITION_FINAL: kind = "final"; state.transcript += text; break;
+    case APRIL_RESULT_RECOGNITION_PARTIAL: kind = "partial"; break;
+    case APRIL_RESULT_SILENCE: kind = "silence"; break;
+    case APRIL_RESULT_ERROR_CANT_KEEP_UP: kind = "overflow"; state.error = true; break;
+    default: return;
     }
-    printf("\n");
+    if (state.json) {
+        std::printf("{\"type\":\"%s\",\"text\":%s}\n", kind, json_quote(text).c_str());
+    } else if (!state.benchmark && count) {
+        std::printf("%c %s\n", result == APRIL_RESULT_RECOGNITION_FINAL ? '@' : '-', text.c_str());
+    } else if (state.error) std::fprintf(stderr, "Audio queue full: some input was rejected.\n");
+    std::fflush(stdout);
 }
-
-int main(int argc, char *argv[]){
-    if(argc != 3){
-        printf("Usage: %s [file] [modelpath]\n", argv[0]);
-        printf(" - [file] must be a 16000Hz raw PCM16 file, or may be - for stdin\n");
-        printf(" - [modelpath] must be a path to the models\n");
-        return 1;
+static unsigned u16(const unsigned char *p) { return p[0] | (unsigned(p[1]) << 8); }
+static uint32_t u32(const unsigned char *p) { return u16(p) | (uint32_t(u16(p + 2)) << 16); }
+static bool read_wav(FILE *file, size_t rate, size_t &bytes) {
+    unsigned char header[12];
+    if (std::fread(header, 1, 12, file) != 12 || std::memcmp(header, "RIFF", 4) || std::memcmp(header + 8, "WAVE", 4)) return false;
+    bool valid_fmt = false;
+    unsigned char chunk[8];
+    while (std::fread(chunk, 1, 8, file) == 8) {
+        uint32_t length = u32(chunk + 4);
+        if (!std::memcmp(chunk, "fmt ", 4)) {
+            unsigned char fmt[16];
+            if (length < 16 || std::fread(fmt, 1, 16, file) != 16) return false;
+            valid_fmt = u16(fmt) == 1 && u16(fmt + 2) == 1 && u32(fmt + 4) == rate && u16(fmt + 12) == 2 && u16(fmt + 14) == 16;
+            if (std::fseek(file, long(length - 16 + (length & 1)), SEEK_CUR)) return false;
+        } else if (!std::memcmp(chunk, "data", 4)) {
+            if (!valid_fmt || (length & 1)) return false;
+            bytes = length;
+            return true;
+        } else if (std::fseek(file, long(length + (length & 1)), SEEK_CUR)) return false;
     }
-
-    const char *input_file = argv[1];
-    const char *input_model = argv[2];
-    
-    // In the start of our program we should call aam_api_init.
-    // This should only be called once.
+    return false;
+}
+static void usage(const char *exe) {
+    std::fprintf(stderr,
+      "Usage: %s AUDIO.wav|AUDIO.pcm|- MODEL.april [options]\n"
+      "  --profile balanced|strict|legacy  (default balanced)\n"
+      "  --threads N        Encoder CPU threads (default 1; tune 1/2/4/8)\n"
+      "  --chunk-ms N       Input packet size (default 20, range 5..200)\n"
+      "  --realtime         Pace a recording like live speech\n"
+      "  --async            Background worker (files are paced automatically)\n"
+      "  --json             Newline-delimited JSON events and benchmark\n"
+      "  --benchmark        Print transcript and processing measurements\n"
+      "Raw PCM/stdin: little-endian, signed 16-bit, mono, model sample rate.\n", exe);
+}
+int main(int argc, char **argv) {
+    env("ORT_DISABLE_TELEMETRY", "1");
+    if (argc < 3 || !std::strcmp(argv[1], "--help")) { usage(argv[0]); return argc == 2 ? 0 : 1; }
+    const char *audio_path = argv[1], *model_path = argv[2];
+    std::string profile = "balanced";
+    int threads = 1, chunk_ms = 20;
+    bool realtime = false, async = false;
+    Results state;
+    for (int i = 3; i < argc; ++i) {
+        std::string option = argv[i];
+        if (option == "--realtime") realtime = true;
+        else if (option == "--async") async = true;
+        else if (option == "--json") state.json = true;
+        else if (option == "--benchmark") state.benchmark = true;
+        else if ((option == "--profile" || option == "--threads" || option == "--chunk-ms") && i + 1 < argc) {
+            const char *value = argv[++i];
+            if (option == "--profile") profile = value;
+            else {
+                char *end; errno = 0;
+                long n = std::strtol(value, &end, 10);
+                int low = option == "--threads" ? 1 : 5, high = option == "--threads" ? 64 : 200;
+                if (errno || *end || n < low || n > high) { usage(argv[0]); return 1; }
+                if (option == "--threads") threads = int(n); else chunk_ms = int(n);
+            }
+        } else { usage(argv[0]); return 1; }
+    }
+    if (profile != "balanced" && profile != "strict" && profile != "legacy") { usage(argv[0]); return 1; }
+    env("APRIL_ENCODER_THREADS", std::to_string(threads));
+    env("APRIL_CORRECT_FBANK", profile == "legacy" ? "0" : "1");
+    env("APRIL_EARLY_EMIT", profile == "strict" ? "0" : "1");
+    env("APRIL_PUNCTUATION_BIAS", profile == "strict" ? "0" : "3.5");
+    env("APRIL_SPECULATIVE", profile == "strict" ? "0" : "1");
+    env("APRIL_MAX_SYMBOLS", profile == "strict" ? "6" : "3");
+    env("APRIL_SILENCE_MS", profile == "legacy" ? "2200" : "1200");
     aam_api_init(APRIL_VERSION);
-
-    // Next we should load the model. The model by itself doesn't allow us
-    // to do much except for get the metadata. If loading the model
-    // fails, NULL is returned.
-    AprilASRModel model = aam_create_model(input_model);
-    if(model == NULL){
-        printf("Loading model %s failed!\n", input_model);
-        return 1;
+    AprilASRModel model = aam_create_model(model_path);
+    if (!model) { std::fprintf(stderr, "Could not load model: %s\n", model_path); return 2; }
+    size_t rate = aam_get_sample_rate(model);
+    bool stdin_mode = !std::strcmp(audio_path, "-");
+    FILE *input = stdin_mode ? stdin : std::fopen(audio_path, "rb");
+    if (!input) { std::perror(audio_path); aam_free(model); return 2; }
+#ifdef _WIN32
+    if (stdin_mode) _setmode(_fileno(stdin), _O_BINARY);
+#endif
+    size_t remaining = SIZE_MAX;
+    if (!stdin_mode) {
+        unsigned char magic[4];
+        size_t read = std::fread(magic, 1, 4, input);
+        std::rewind(input);
+        if (read == 4 && !std::memcmp(magic, "RIFF", 4) && !read_wav(input, rate, remaining)) {
+            std::fprintf(stderr, "WAV must be mono PCM16 at %zu Hz, with a valid RIFF header.\n", rate);
+            std::fclose(input); aam_free(model); return 2;
+        }
     }
-    
-    size_t model_sample_rate = aam_get_sample_rate(model);
-    printf("Model name: %s\n", aam_get_name(model));
-    printf("Model desc: %s\n", aam_get_description(model));
-    printf("Model lang: %s\n", aam_get_language(model));
-    printf("Model samplerate: %ld\n\n", model_sample_rate);
-
-
-    // To do actual speech recognition, it's necessary to create a session.
-    // Models and sessions are separate to allow for more efficient handling
-    // of multiple sessions. For example, an application may be performing
-    // recognition on 20 different audio streams by using 20 different sessions
-    // and by re-using the same AprilASRModel the relative memory use is low.
-    // However, it's important that the AprilASRModel does not get freed
-    // before all of its sessions.
-    AprilConfig config = { 0 };
-    config.handler = handler;
-    config.userdata = (void*)&some_internal_state;
-
-    // By default, the session runs in synchronous mode. If you want async
-    // processing, you may choose to set it to APRIL_CONFIG_FLAG_ASYNC_RT_BIT
-    // here.
-    config.flags = APRIL_CONFIG_FLAG_ZERO_BIT;
-
+    AprilConfig config = {};
+    config.handler = handler; config.userdata = &state;
+    config.flags = async ? APRIL_CONFIG_FLAG_ASYNC_NO_RT_BIT : APRIL_CONFIG_FLAG_ZERO_BIT;
     AprilASRSession session = aas_create_session(model, config);
-
-
-    if(argv[1][0] == '-' && argv[1][1] == 0) {
-        // Reading stdin mode. It's assumed that the input data is pcm16 audio,
-        // sampled in the model's sample rate.
-        // You can achieve this on Linux like this:
-        // $ parec --format=s16 --rate=16000 --channels=1 --latency-ms=100 | ./main - /path/to/model.april
-
-        char data[BUFFER_SIZE];
-        ssize_t r;
-        for(;;){
-            r = read(STDIN_FILENO, data, BUFFER_SIZE);
-            
-            if (r == -1) {
-                aas_flush(session);
-                break;
-            } else
-            if (r <= 0) {
-                continue;
-            }
-            
-            aas_feed_pcm16(session, (short *)data, r/2);
+    if (!session) { if (!stdin_mode) std::fclose(input); aam_free(model); return 2; }
+    // Unbuffered reads do not wait to fill an entire stdio buffer on a live pipe.
+    if (stdin_mode) std::setvbuf(input, nullptr, _IONBF, 0);
+    size_t packet_bytes = std::max(size_t(2), rate * size_t(chunk_ms) / 1000 * 2);
+    std::vector<unsigned char> packet(packet_bytes + 1);
+    std::vector<short> pcm(packet_bytes / 2 + 1);
+    std::vector<double> feed_times;
+    state.start = Clock::now();
+    size_t samples = 0, carry = 0;
+    bool failed = false;
+    while (remaining) {
+        size_t wanted = std::min(packet_bytes - carry, remaining);
+        size_t got = std::fread(packet.data() + carry, 1, wanted, input);
+        if (!got) {
+            if (std::ferror(input) && errno == EINTR) { std::clearerr(input); continue; }
+            failed = std::ferror(input) || (remaining != SIZE_MAX && remaining != 0);
+            break;
         }
-    } else if (argv[1][0] == '?' && argv[1][1] == 0) {
-        // Run some blank data, mainly for memory leak testing
-        char data[6400];
-        memset(data, 0, 6400);
-        aas_feed_pcm16(session, (short *)data, 3200);
-        aas_flush(session);
-    } else {
-        // wave file mode, the file must be in PCM16 format sampled in the
-        // model's sample rate.
-        FILE *fd = fopen(argv[1], "rb");
-        
-        if(fd == 0){
-            printf("Failed to open file %s\n", argv[1]);
-            return 2;
+        if (remaining != SIZE_MAX) remaining -= got;
+        size_t bytes = carry + got, count = bytes / 2;
+        for (size_t j = 0; j < count; ++j) pcm[j] = short(u16(packet.data() + 2 * j));
+        if (count) {
+            auto begin = Clock::now();
+            aas_feed_pcm16(session, pcm.data(), count);
+            feed_times.push_back(ms(Clock::now() - begin));
+            samples += count;
+            if (!stdin_mode && (realtime || async))
+                std::this_thread::sleep_until(state.start + std::chrono::duration_cast<Clock::duration>(std::chrono::duration<double>(double(samples) / rate)));
         }
-
-        fseek(fd, 0L, SEEK_END);
-        size_t sz = ftell(fd);
-        size_t offset = 0L;
-
-        fseek(fd, 0L, SEEK_SET);
-
-        // Verify the RIFF header if supplied
-        if(ends_with(argv[1], ".wav")) {
-            wav_header header;
-            fread(&header, 1L, 44L, fd);
-
-            bool is_valid_wav = (header.fmt_chunk_size == 16)
-                             && (header.audio_format == 1)
-                             && (header.sample_rate == model_sample_rate)
-                             && (header.num_channels == 1);
-            
-            if(!is_valid_wav){
-                printf("Wave file must be single-channel 16-bit PCM sampled in %llu Hz!\n", model_sample_rate);
-                return 2;
-            }
-
-            offset = 44L;
-        }
-
-        fseek(fd, 0L, SEEK_SET);
-
-        // read the file
-        uint8_t *file = (uint8_t *)calloc(1, sz);
-        if (fread(file, 1, sz, fd) != sz) {
-            printf("reading file failed\n");
-            return 4;
-        }
-
-        int16_t *file_data = (int16_t *)(file + offset);
-        size_t num_shorts = (sz - offset) / 2;
-
-        // For synchronous mode, it's possible to feed the entire thing at once
-        // For asynchronous, you may want to break it up into smaller chunks
-        // over time because the size of the internal buffer is limited
-        aas_feed_pcm16(session, file_data, num_shorts);
-
-        // Flushing makes sure any remaining frames get processed and a final
-        // result is given
-        aas_flush(session);
-
-        printf("\ndone\n");
-
-        free(file);
-        fclose(fd);
+        carry = bytes & 1;
+        if (carry) packet[0] = packet[bytes - 1];
     }
-
-    aas_free(session);
-    aam_free(model);
-
-    return 0;
-}
-
-
-int ends_with(const char *str, const char *suffix) {
-    if (!str || !suffix)
-        return 0;
-    size_t lenstr = strlen(str);
-    size_t lensuffix = strlen(suffix);
-    if (lensuffix >  lenstr)
-        return 0;
-    return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
+    if (carry) { std::fprintf(stderr, "Incomplete PCM16 sample at EOF.\n"); failed = true; }
+    auto flush_start = Clock::now();
+    aas_flush(session);
+    aas_wait(session);
+    double flush_ms = ms(Clock::now() - flush_start);
+    double elapsed = ms(Clock::now() - state.start);
+    std::sort(feed_times.begin(), feed_times.end());
+    auto percentile = [&](double q) { return feed_times.empty() ? 0.0 : feed_times[size_t(q * (feed_times.size() - 1))]; };
+    if (state.benchmark || state.json) {
+        double duration = double(samples) / rate;
+        std::printf("{\"type\":\"benchmark\",\"profile\":%s,\"threads\":%d,\"audio_seconds\":%.6f,\"wall_seconds\":%.6f,\"rtf\":%.6f,\"feed_p50_ms\":%.6f,\"feed_p95_ms\":%.6f,\"feed_max_ms\":%.6f,\"flush_ms\":%.6f,\"first_text_wall_ms\":%.6f,\"first_text_audio_ms\":%zu,\"paced\":%s,\"async\":%s,\"transcript\":%s}\n",
+            json_quote(profile).c_str(), threads, duration, elapsed / 1000.0, duration ? elapsed / 1000.0 / duration : 0.0,
+            percentile(0.5), percentile(0.95), percentile(1), flush_ms, state.first_ms, state.first_audio_ms,
+            realtime || async ? "true" : "false", async ? "true" : "false", json_quote(state.transcript).c_str());
+    }
+    bool overflow = state.error;
+    aas_free(session); aam_free(model);
+    if (!stdin_mode) std::fclose(input);
+    if (failed) std::fprintf(stderr, "Audio input was truncated or could not be read.\n");
+    return failed || overflow ? 3 : 0;
 }

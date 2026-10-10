@@ -70,6 +70,7 @@ class Model:
     model.
     """
     def __init__(self, path: str):
+        self._handle = None
         self._handle = _c.ffi.aam_create_model(path)
 
         if self._handle is None:
@@ -92,7 +93,8 @@ class Model:
         return _c.ffi.aam_get_sample_rate(self._handle)
 
     def __del__(self):
-        _c.ffi.aam_free(self._handle)
+        if getattr(self, "_handle", None) is not None and _c.ffi is not None:
+            _c.ffi.aam_free(self._handle)
         self._handle = None
 
 
@@ -122,6 +124,10 @@ class Session:
             no_rt: bool = False,
             speaker_name: str = ""
         ):
+        self._handle = None
+        if not callable(callback):
+            raise TypeError("callback must be callable")
+        self.callback = callback
         config = _c.AprilConfig()
         config.flags = _c.AprilConfigFlagBits()
 
@@ -144,8 +150,6 @@ class Session:
         if self._handle is None:
             raise Exception()
 
-        self.callback = callback
-
     def get_rt_speedup(self) -> float:
         """
         If the session is asynchronous and realtime, this will return a
@@ -153,8 +157,24 @@ class Session:
         a value greater than 1.0 means the input audio is being sped up by that
         factor in order to keep up. When the value is greater 1.0, the accuracy
         is likely to be affected.
+
+        Sessions created with no_rt never speed up audio, so this always
+        returns 1.0 for them; use get_backlog_ms() instead.
         """
         return _c.ffi.aas_realtime_get_speedup(self._handle)
+
+    def get_backlog_ms(self) -> int:
+        """
+        Return how many milliseconds of fed audio an asynchronous session has
+        not processed yet, or 0 for a synchronous session. A backlog that keeps
+        growing means the system cannot keep up; once the internal buffer is
+        full, audio is dropped and the handler receives ErrorCantKeepUp.
+
+        Requires the updated native engine.
+        """
+        if _c.ffi.aas_get_backlog_ms is None:
+            raise RuntimeError("This native April ASR library does not provide aas_get_backlog_ms")
+        return _c.ffi.aas_get_backlog_ms(self._handle)
 
     def feed_pcm16(self, data: bytes) -> None:
         """
@@ -169,11 +189,26 @@ class Session:
     def flush(self) -> None:
         """
         Flush any remaining samples and force the session to produce a final
-        result.
+        result. In an asynchronous session the flush is queued in order with
+        the audio, so audio fed afterwards belongs to the next utterance and
+        feeding may continue immediately. Call wait() when the final result
+        must have been delivered before continuing.
         """
         _c.ffi.aas_flush(self._handle)
 
+    def wait(self) -> None:
+        """Wait for queued async recognition and callbacks, including the final
+        results of every queued flush(). Returns immediately when synchronous.
+
+        Requires the updated native engine. Do not call from the handler.
+        """
+        if _c.ffi.aas_wait is None:
+            raise RuntimeError("This native April ASR library does not provide aas_wait")
+        if not _c.ffi.aas_wait(self._handle):
+            raise RuntimeError("Cannot wait for this session from its handler")
+
     def __del__(self):
-        _c.ffi.aas_free(self._handle)
+        if getattr(self, "_handle", None) is not None and _c.ffi is not None:
+            _c.ffi.aas_free(self._handle)
         self.model = None
         self._handle = None

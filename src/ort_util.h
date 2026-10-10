@@ -49,14 +49,13 @@ extern const OrtApi* g_ort;
 #define CALLOC_SHAPE2(SHAPE, TYPE) (TYPE *)calloc(SHAPE_PRODUCT2(SHAPE), sizeof(TYPE))
 #define CALLOC_SHAPE3(SHAPE, TYPE) (TYPE *)calloc(SHAPE_PRODUCT3(SHAPE), sizeof(TYPE))
 
-#define CREATE_TENSOR1(MEMINFO, DATA, SHAPE, TYPE, TYPE_ENUM, OUT) \
-    ORT_ABORT_ON_ERROR(g_ort->CreateTensorWithDataAsOrtValue((MEMINFO), (DATA), sizeof(TYPE)*SHAPE_PRODUCT1((SHAPE)), (SHAPE), 1, (TYPE_ENUM), (OUT)));
-
-#define CREATE_TENSOR2(MEMINFO, DATA, SHAPE, TYPE, TYPE_ENUM, OUT) \
-    ORT_ABORT_ON_ERROR(g_ort->CreateTensorWithDataAsOrtValue((MEMINFO), (DATA), sizeof(TYPE)*SHAPE_PRODUCT2((SHAPE)), (SHAPE), 2, (TYPE_ENUM), (OUT)));
-
-#define CREATE_TENSOR3(MEMINFO, DATA, SHAPE, TYPE, TYPE_ENUM, OUT) \
-    ORT_ABORT_ON_ERROR(g_ort->CreateTensorWithDataAsOrtValue((MEMINFO), (DATA), sizeof(TYPE)*SHAPE_PRODUCT3((SHAPE)), (SHAPE), 3, (TYPE_ENUM), (OUT)));
+/* Recoverable setup failures must reach the API caller, not abort the host. */
+static inline bool ort_ok(OrtStatus *status) {
+    if (!status) return true;
+    LOG_ERROR("ONNX: %s", g_ort->GetErrorMessage(status));
+    g_ort->ReleaseStatus(status);
+    return false;
+}
 
 typedef struct TensorF {
     float *data;
@@ -68,21 +67,23 @@ typedef struct TensorI {
     OrtValue *tensor;
 } TensorI;
 
-#define DEF_ALLOC_TENS(rtype, fname, allocor, creator, dtype, denum)            \
-    static inline rtype fname(OrtMemoryInfo *memory_info, int64_t *shape){      \
-        rtype result;                                                           \
-        result.data = allocor(shape, dtype);                                    \
-        creator(memory_info, result.data, shape, dtype, denum, &result.tensor); \
-        return result;                                                          \
+#define DEF_ALLOC_TENS(rtype, fname, rank, dtype, denum) \
+    static inline rtype fname(OrtMemoryInfo *mi, int64_t *shape) { \
+        rtype result = {0}; \
+        size_t count = 1; \
+        for (size_t i = 0; i < rank; ++i) { \
+            if (shape[i] <= 0 || (uint64_t)shape[i] > SIZE_MAX / sizeof(dtype) / count) return result; \
+            count *= (size_t)shape[i]; \
+        } \
+        result.data = calloc(count, sizeof(dtype)); \
+        if (result.data && !ort_ok(g_ort->CreateTensorWithDataAsOrtValue( \
+                mi, result.data, count * sizeof(dtype), shape, rank, denum, &result.tensor))) { \
+            free(result.data); result.data = NULL; \
+        } \
+        return result; \
     }
-
-DEF_ALLOC_TENS(TensorF, alloc_tensor1f, CALLOC_SHAPE1, CREATE_TENSOR1, float, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT);
-DEF_ALLOC_TENS(TensorF, alloc_tensor2f, CALLOC_SHAPE2, CREATE_TENSOR2, float, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT);
-DEF_ALLOC_TENS(TensorF, alloc_tensor3f, CALLOC_SHAPE3, CREATE_TENSOR3, float, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT);
-
-DEF_ALLOC_TENS(TensorI, alloc_tensor1i, CALLOC_SHAPE1, CREATE_TENSOR1, int64_t, ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64);
-DEF_ALLOC_TENS(TensorI, alloc_tensor2i, CALLOC_SHAPE2, CREATE_TENSOR2, int64_t, ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64);
-DEF_ALLOC_TENS(TensorI, alloc_tensor3i, CALLOC_SHAPE3, CREATE_TENSOR3, int64_t, ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64);
+DEF_ALLOC_TENS(TensorF, alloc_tensor3f, 3, float, ONNX_TENSOR_ELEMENT_DATA_TYPE_FLOAT)
+DEF_ALLOC_TENS(TensorI, alloc_tensor2i, 2, int64_t, ONNX_TENSOR_ELEMENT_DATA_TYPE_INT64)
 
 static inline void free_tensorf(TensorF *f) {
     g_ort->ReleaseValue(f->tensor);
@@ -108,29 +109,30 @@ static inline void free_tensori(TensorI *f) {
     } while (0)
 
 
-size_t input_dims(OrtSession* session, size_t idx, int64_t *dimensions, size_t dim_size);
-size_t output_dims(OrtSession* session, size_t idx, int64_t *dimensions, size_t dim_size);
+bool tensor_info(OrtSession *session, bool output, size_t index, const char *name,
+                 ONNXTensorElementDataType type, int64_t *dimensions, size_t rank);
 
 static inline size_t input_count(OrtSession *session) {
-    size_t num;
-    ORT_ABORT_ON_ERROR(g_ort->SessionGetInputCount(session, &num));
+    size_t num = SIZE_MAX;
+    if (!ort_ok(g_ort->SessionGetInputCount(session, &num))) return SIZE_MAX;
     return num;
 }
-
 static inline size_t output_count(OrtSession *session) {
-    size_t num;
-    ORT_ABORT_ON_ERROR(g_ort->SessionGetOutputCount(session, &num));
+    size_t num = SIZE_MAX;
+    if (!ort_ok(g_ort->SessionGetOutputCount(session, &num))) return SIZE_MAX;
     return num;
 }
 
-
-static inline void load_network_from_model_file(const OrtEnv *env, const OrtSessionOptions *options, ModelFile file, size_t index, OrtSession **session) {
-    size_t network_size = model_network_size(file, index);
-    void *network = malloc(network_size);
-    size_t r = model_network_read(file, index, network, network_size);
-    assert(r == network_size);
-    ORT_ABORT_ON_ERROR(g_ort->CreateSessionFromArray(env, network, network_size, options, session));
+static inline bool load_network_from_model_file(const OrtEnv *env, const OrtSessionOptions *options,
+                                                 ModelFile file, size_t index, OrtSession **session) {
+    size_t size = model_network_size(file, index);
+    if (!size) return false;
+    void *network = malloc(size);
+    if (!network) return false;
+    bool ok = model_network_read(file, index, network, size) == size;
+    if (ok) ok = ort_ok(g_ort->CreateSessionFromArray(env, network, size, options, session));
     free(network);
+    return ok;
 }
 
 #endif

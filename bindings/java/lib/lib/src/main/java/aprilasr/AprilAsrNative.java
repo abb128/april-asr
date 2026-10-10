@@ -92,6 +92,8 @@ public class AprilAsrNative {
     public static native Pointer aas_create_session(Pointer model, AprilConfig.ByValue config);
     public static native void aas_feed_pcm16(Pointer session, short[] pcm16, long short_count);
     public static native void aas_flush(Pointer session);
+    public static native int aas_wait(Pointer session);
+    public static native NativeLong aas_get_backlog_ms(Pointer session);
 
     public static native float aas_realtime_get_speedup(Pointer session);
 

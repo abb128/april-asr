@@ -125,7 +125,14 @@ for(int i=0; i<(fileData.Length/2); i+=shorts.Length){
 }
 
 session.Flush();
+session.Wait();
 ```
+
+`Flush` returns immediately in an asynchronous session. `Wait` blocks until the final result has been delivered to your callback; do not call it from the callback itself. To check whether recognition is keeping up, `GetBacklogMs` returns how many milliseconds of fed audio have not been processed yet.
+
+## Cleaning up
+
+`AprilSession` and `AprilModel` implement `IDisposable`. Dispose sessions when you are done with them, for example with `using`, so their background threads stop promptly. A model is freed only after every session using it has been disposed or collected.
 
 
 ## Complete example

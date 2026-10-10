@@ -26,6 +26,7 @@
 
 #include "audio_provider.h"
 #include "proc_thread.h"
+#include "thread_compat.h"
 
 #define MAX_ACTIVE_TOKENS 72
 
@@ -64,12 +65,20 @@ struct AprilASRSession_i {
 
     size_t current_time_ms;
     size_t last_emission_time_ms;
+    uint64_t source_samples;
 
     AprilRecognitionResultHandler handler;
     void *userdata;
 
     size_t time_since_update_speed;
     double speed_needed;
+    mtx_t status_mutex;
+    bool status_mutex_init;
+    int silence_ms;
+    int max_symbols;
+    float early_emit;
+    float punctuation_bias;
+    bool speculative;
 };
 
 #endif

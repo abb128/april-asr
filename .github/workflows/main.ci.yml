@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, windows-latest]
+        os: [ubuntu-22.04, windows-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -25,13 +25,13 @@ jobs:
         with:
           submodules: recursive
       
-      - if: matrix.os == 'ubuntu-20.04'
+      - if: matrix.os == 'ubuntu-22.04'
         name: Install apt packages
         uses: awalsh128/cache-apt-pkgs-action@v1.4.3
         with:
           packages: build-essential cmake wget tar
 
-      - if: matrix.os == 'ubuntu-20.04'
+      - if: matrix.os == 'ubuntu-22.04'
         name: Download ONNXRuntime (Linux)
         shell: bash
         working-directory: ${{github.workspace}}
@@ -52,23 +52,38 @@ jobs:
         working-directory: ${{github.workspace}}/build
         run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DUSE_TINYCTHREAD=ON
 
-      - if: matrix.os == 'ubuntu-20.04'
+      - if: matrix.os == 'ubuntu-22.04'
         name: Configure CMake (Linux)
         shell: bash
         working-directory: ${{github.workspace}}/build
-        run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
+        run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=RELEASE -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DBUILD_TESTING=ON
 
       - name: Build libaprilasr
         working-directory: ${{github.workspace}}/build
         shell: bash
         run: cmake --build . --config RELEASE
 
+      - if: matrix.os == 'ubuntu-22.04'
+        name: Run native tests
+        working-directory: ${{github.workspace}}/build
+        run: ctest --output-on-failure
+
+      - if: matrix.os == 'ubuntu-22.04'
+        name: Run synthetic-model tests
+        working-directory: ${{github.workspace}}
+        env:
+          LD_LIBRARY_PATH: ${{github.workspace}}/lib/lib
+        run: |
+          python3 -m pip install onnx numpy
+          python3 tests/test_model_contracts.py build/libaprilasr.so
+          python3 tests/test_async_ordering.py build/libaprilasr.so
+
       - name: Ensure wheel and auditwheel are installed
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install wheel auditwheel
       
-      - if: matrix.os == 'ubuntu-20.04'
+      - if: matrix.os == 'ubuntu-22.04'
         name: Update patchelf on Linux
         run: python3 -m pip install --upgrade patchelf
       
@@ -77,11 +92,11 @@ jobs:
         shell: bash
         run: python3 setup.py bdist_wheel
 
-      - if: matrix.os == 'ubuntu-20.04'
+      - if: matrix.os == 'ubuntu-22.04'
         name: Fix Linux wheel
         working-directory: ${{github.workspace}}/bindings/python
         shell: bash
-        run: mkdir wheelhouse && auditwheel repair dist/april_asr-*-py3-none-linux_x86_64.whl --plat manylinux_2_31_x86_64
+        run: mkdir wheelhouse && auditwheel repair dist/april_asr-*-py3-none-linux_x86_64.whl --plat manylinux_2_35_x86_64
 
       - if: matrix.os == 'windows-latest'
         name: Upload libaprilasr.dll
@@ -104,21 +119,21 @@ jobs:
           name: windows-python-dist
           path: ${{github.workspace}}/bindings/python/dist
       
-      - if: matrix.os == 'ubuntu-20.04'
+      - if: matrix.os == 'ubuntu-22.04'
         name: Upload libaprilasr.so
         uses: actions/upload-artifact@v4
         with:
           name: libaprilasr.so
           path: ${{github.workspace}}/build/libaprilasr.so
 
-      - if: matrix.os == 'ubuntu-20.04'
+      - if: matrix.os == 'ubuntu-22.04'
         name: Upload libonnxruntime.so
         uses: actions/upload-artifact@v4
         with:
           name: libonnxruntime.so
           path: ${{github.workspace}}/lib/lib/libonnxruntime.so
 
-      - if: matrix.os == 'ubuntu-20.04'
+      - if: matrix.os == 'ubuntu-22.04'
         name: Upload Python wheel (Linux)
         uses: actions/upload-artifact@v4
         with:
@@ -127,7 +142,7 @@ jobs:
   nupkg:
     name: Build nupkg
     needs: build
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
 
     steps:

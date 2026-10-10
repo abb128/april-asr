@@ -31,11 +31,20 @@ const OrtApi* g_ort = NULL;
 LogLevel g_loglevel = LEVEL_WARNING;
 
 void aam_api_init(int version){
+    /* ORT 1.29+ also has a process-wide opt-out, effective before its first
+       initialization. Launchers set this before process startup as well. */
+    if (!getenv("ORT_DISABLE_TELEMETRY")) {
+#ifdef _WIN32
+        _putenv_s("ORT_DISABLE_TELEMETRY", "1");
+#else
+        setenv("ORT_DISABLE_TELEMETRY", "1", 0);
+#endif
+    }
     g_client_version = version;
 
     char *log_env = getenv("APRIL_LOG_LEVEL");
     if(log_env){
-        for(int i=0; i<=LEVEL_COUNT; i++){
+        for(int i=0; i<=(int)LEVEL_COUNT; i++){
             if(strcmp(log_env, LogLevelStrings[i]) == 0) {
                 g_loglevel = (LogLevel)i;
             }

@@ -157,7 +157,8 @@ typedef enum AprilConfigFlagBits {
     /* Similar to ASYNC_RT, but does not degrade accuracy depending on system
        hardware. However, if the system is not fast enough to process audio,
        the background thread will fall behind, results may become unusable,
-       and the handler will be called with APRIL_RESULT_ERROR_CANT_KEEP_UP. */
+       and the handler will be called with APRIL_RESULT_ERROR_CANT_KEEP_UP.
+       Use `aas_get_backlog_ms` to monitor how far behind it is. */
     APRIL_CONFIG_FLAG_ASYNC_NO_RT_BIT = 0x00000002,
 } AprilConfigFlagBits;
 
@@ -182,17 +183,46 @@ APRIL_EXPORT AprilASRSession aas_create_session(AprilASRModel model, AprilConfig
    Note `short_count` is the number of shorts, not bytes! */
 APRIL_EXPORT void aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count);
 
-/* Processes any unprocessed samples and produces a final result. */
+/* Processes pending samples and produces a final result. An empty flush does
+   nothing. After completion, recurrence and audio context are reset for the
+   next utterance; timestamps continue from accepted source audio, excluding
+   the synthetic right-context padding used during flush.
+
+   In async mode the flush is queued in order with the audio: everything fed
+   before this call belongs to the flushed utterance, and everything fed after
+   it belongs to the next one, even if the background thread has not caught
+   up yet. Feeding may therefore continue immediately, for example from an
+   audio capture callback. Call aas_wait only when the final result must have
+   been delivered before continuing. */
 APRIL_EXPORT void aas_flush(AprilASRSession session);
+
+/* Wait for queued asynchronous work and callbacks to finish, including the
+   final results of every queued flush. Returns 1 on success, or 0 if called
+   from an asynchronous session's callback (which would deadlock). Returns 1
+   immediately for synchronous sessions. Feed/flush/wait/free must have one owner; do not
+   call wait/free in callbacks. */
+APRIL_EXPORT int aas_wait(AprilASRSession session);
+
+/* Returns how many milliseconds of fed audio an asynchronous session has not
+   yet processed, or 0 for a synchronous session. This works in both async
+   modes: a backlog that keeps growing means the system cannot keep up, and
+   once the internal buffer is full (48000 samples, 3 seconds at 16 kHz),
+   further audio is dropped and the handler receives
+   APRIL_RESULT_ERROR_CANT_KEEP_UP. May be called from any thread while the
+   session is alive. */
+APRIL_EXPORT size_t aas_get_backlog_ms(AprilASRSession session);
 
 /* If APRIL_CONFIG_FLAG_ASYNC_RT_BIT is set, this may return a number describing
    how much audio is being sped up to keep up with realtime. If the number is
    below 1.0, audio is not being sped up. If greater than 1.0, the audio is
-   being sped up and the accuracy may be reduced. */
+   being sped up and the accuracy may be reduced. Without ASYNC_RT audio is
+   never sped up and this always returns 1.0; use aas_get_backlog_ms to
+   detect falling behind instead. */
 APRIL_EXPORT float aas_realtime_get_speedup(AprilASRSession session);
 
-/* Frees the session, this must be called for all sessions before freeing
-   the model. Saves state to a file if AprilSpeakerID was supplied. */
+/* Drain queued async work and free the session. Call for every session before
+   freeing the model. Do not call from its result callback or concurrently with
+   feed/flush. AprilSpeakerID state persistence is not implemented. */
 APRIL_EXPORT void aas_free(AprilASRSession session);
 
 #ifdef __cplusplus

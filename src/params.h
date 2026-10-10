@@ -50,6 +50,7 @@ char *get_token(ModelParameters *params, size_t token_index);
 // Returns false if reading failed
 bool read_params(ModelParameters *params, const char *path);
 bool read_params_from_fd(ModelParameters *params, FILE *fd);
+bool read_params_section(ModelParameters *params, FILE *fd, uint64_t size);
 
 void free_params(ModelParameters *params);
 

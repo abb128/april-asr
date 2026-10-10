@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Threading;
 using AprilAsr.PINVOKE;
 
 namespace AprilAsr
@@ -45,8 +47,31 @@ namespace AprilAsr
     /// 
     /// You need to pass a Model when constructing a Session.
     /// </summary>
-    public class AprilSession
+    public class AprilSession : IDisposable
     {
+        // Sessions not yet freed. An asynchronous session's worker thread is
+        // attached to the runtime once it delivers a result, and Mono waits for
+        // attached threads at exit, so free whatever is left when the process
+        // exits. Weak references keep this from holding sessions alive.
+        private static readonly List<WeakReference<AprilSession>> live = new List<WeakReference<AprilSession>>();
+
+        static AprilSession()
+        {
+            AppDomain.CurrentDomain.ProcessExit += (sender, args) =>
+            {
+                List<WeakReference<AprilSession>> remaining;
+                lock(live) remaining = new List<WeakReference<AprilSession>>(live);
+                foreach(var reference in remaining)
+                {
+                    try
+                    {
+                        if(reference.TryGetTarget(out var session)) session.Free();
+                    }
+                    catch(InvalidOperationException) { }
+                }
+            };
+        }
+
         private IntPtr handle;
         private AprilModel model;
         private SessionCallback callback;
@@ -100,16 +125,60 @@ namespace AprilAsr
                 config.speaker.data[3] = (byte)(hash >> 0);
             }
 
+            model.AddSession();
             handle = AprilAsrPINVOKE.aas_create_session(model.handle, config);
             if(handle == IntPtr.Zero)
             {
+                model.RemoveSession();
                 throw new Exception("Failed to create session");
             }
+
+            lock(live)
+            {
+                live.RemoveAll(r => !r.TryGetTarget(out _));
+                live.Add(new WeakReference<AprilSession>(this));
+            }
+        }
+
+        /// <summary>
+        /// Finishes queued work and frees the session. Do not call this from
+        /// the session's callback.
+        /// </summary>
+        public void Dispose()
+        {
+            Free();
+            GC.SuppressFinalize(this);
         }
 
         ~AprilSession()
         {
-            AprilAsrPINVOKE.aas_free(handle);
+            // At process exit the background thread may be blocked calling
+            // into the shutting-down runtime, so waiting for it would hang.
+            if(!Environment.HasShutdownStarted) Free();
+        }
+
+        private IntPtr Handle
+        {
+            get
+            {
+                IntPtr session = handle;
+                if(session == IntPtr.Zero) throw new ObjectDisposedException(nameof(AprilSession));
+                return session;
+            }
+        }
+
+        private void Free()
+        {
+            IntPtr current = handle;
+            if(current == IntPtr.Zero) return;
+            // aas_free refuses on the session's own worker thread; detect that
+            // here so the model is not released while the session still runs.
+            if(AprilAsrPINVOKE.aas_wait(current) == 0)
+                throw new InvalidOperationException("Cannot dispose a session from its own callback");
+            IntPtr session = Interlocked.Exchange(ref handle, IntPtr.Zero);
+            if(session == IntPtr.Zero) return;
+            AprilAsrPINVOKE.aas_free(session);
+            model.RemoveSession();
         }
 
         /// <summary>
@@ -121,7 +190,7 @@ namespace AprilAsr
         /// </summary>
         public void FeedPCM16(short[] samples, int num_samples)
         {
-            AprilAsrPINVOKE.aas_feed_pcm16(handle, samples, num_samples);
+            AprilAsrPINVOKE.aas_feed_pcm16(Handle, samples, num_samples);
         }
 
         /// <summary>
@@ -129,20 +198,51 @@ namespace AprilAsr
         /// positive float. A value below 1.0 means the session is keeping up, and
         /// a value greater than 1.0 means the input audio is being sped up by that
         /// factor in order to keep up. When the value is greater 1.0, the accuracy
-        /// is likely to be affected.
+        /// is likely to be affected. Sessions created with noRT never speed up
+        /// audio and always return 1.0; use GetBacklogMs instead.
         /// </summary>
         public float GetRTSpeedup()
         {
-            return AprilAsrPINVOKE.aas_realtime_get_speedup(handle);
+            return AprilAsrPINVOKE.aas_realtime_get_speedup(Handle);
+        }
+
+        /// <summary>
+        /// Returns how many milliseconds of fed audio an asynchronous session
+        /// has not processed yet, or 0 for a synchronous session. A backlog that
+        /// keeps growing means the system cannot keep up; once the internal
+        /// buffer is full, audio is dropped and the callback receives
+        /// ErrorCantKeepUp.
+        /// </summary>
+        public ulong GetBacklogMs()
+        {
+            return AprilAsrPINVOKE.aas_get_backlog_ms(Handle).ToUInt64();
         }
 
         /// <summary>
         /// Flush any remaining samples and force the session to produce a final
-        /// result.
+        /// result. In an asynchronous session the flush is queued in order with
+        /// the audio, so audio fed afterwards belongs to the next utterance and
+        /// feeding may continue immediately. Call Wait when the final result
+        /// must have been delivered before continuing.
         /// </summary>
         public void Flush()
         {
-            AprilAsrPINVOKE.aas_flush(handle);
+            AprilAsrPINVOKE.aas_flush(Handle);
+        }
+
+        /// <summary>
+        /// Wait for queued asynchronous work and callbacks to finish, including
+        /// the final results of every queued flush. Returns immediately for
+        /// synchronous sessions.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">If called from this
+        /// session's callback, which would deadlock.</exception>
+        public void Wait()
+        {
+            if(AprilAsrPINVOKE.aas_wait(Handle) == 0)
+            {
+                throw new InvalidOperationException("Cannot wait for a session from its own callback");
+            }
         }
     }
 }

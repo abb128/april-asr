@@ -80,7 +80,13 @@ A realtime session will work around this by automatically deciding to speed up i
 
 Speeding up audio may reduce accuracy. It may not be severe at small values (such as 1.2x), but at larger values (such as over 2.0x) the accuracy may be severely impacted. There is a method you can call to get the current speedup value to know when this is happening, so you can display a warning to the user or similar.
 
-A non-realtime session ignores this problem and assumes the system is fast enough. If this is not the case, the results will fall behind, the internal buffer will get full, `ErrorCantKeepUp` result will be called, and the results will be disastrously horrible.
+A non-realtime session ignores this problem and assumes the system is fast enough. If this is not the case, the results will fall behind, the internal buffer will get full, `ErrorCantKeepUp` result will be called, and the results will be disastrously horrible. The speedup value is always 1.0 in a non-realtime session; instead, query the backlog (`aas_get_backlog_ms`, or the equivalent in the bindings), which tells you how many milliseconds of fed audio have not been processed yet. A backlog that keeps growing means the system cannot keep up.
+
+### Flushing and waiting
+
+Flushing ends the current utterance and produces a final result. In an asynchronous session the flush is queued in order with the audio: audio fed before the flush belongs to the flushed utterance, and audio fed after it starts the next one, even if the background thread is still behind. You can keep feeding audio right after flushing.
+
+Because the work happens on another thread, the final result may arrive after the flush call returns. When you need it before continuing, for example before reading results at the end of a file, wait for the session (`aas_wait`, or `wait`/`waitIdle`/`Wait` in the bindings). Do not wait from inside the handler, as that would deadlock.
 
 ## Handler
 

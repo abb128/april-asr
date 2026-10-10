@@ -65,6 +65,12 @@ namespace AprilAsr.PINVOKE {
         [DllImport("libaprilasr", EntryPoint="aas_flush", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void aas_flush(IntPtr session);
 
+        [DllImport("libaprilasr", EntryPoint="aas_wait", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern int aas_wait(IntPtr session);
+
+        [DllImport("libaprilasr", EntryPoint="aas_get_backlog_ms", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern UIntPtr aas_get_backlog_ms(IntPtr session);
+
         [DllImport("libaprilasr", EntryPoint="aas_realtime_get_speedup", CallingConvention = CallingConvention.Cdecl)]
         internal static extern float aas_realtime_get_speedup(IntPtr session);
 

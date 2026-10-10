@@ -19,11 +19,25 @@
 #include "log.h"
 #include "params.h"
 #include "april_session.h"
+#include "settings.h"
+#include "time_util.h"
 
 void run_aas_callback(void *userdata, int flags);
 
 AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config) {
+    if (!model || !config.handler) return NULL;
     AprilASRSession aas = (AprilASRSession)calloc(1, sizeof(struct AprilASRSession_i));
+    if (!aas) return NULL;
+    if (mtx_init(&aas->status_mutex, mtx_plain) != thrd_success) {
+        free(aas);
+        return NULL;
+    }
+    aas->status_mutex_init = true;
+    aas->silence_ms = april_env_int("APRIL_SILENCE_MS", 1200, 200, 10000);
+    aas->max_symbols = april_env_int("APRIL_MAX_SYMBOLS", 3, 1, 16);
+    aas->early_emit = april_env_float("APRIL_EARLY_EMIT", 1.0f, 0.0f, 4.0f);
+    aas->punctuation_bias = april_env_float("APRIL_PUNCTUATION_BIAS", 3.5f, 0.0f, 6.0f);
+    aas->speculative = april_env_int("APRIL_SPECULATIVE", 1, 0, 1) != 0;
 
     aas->sync = ((config.flags & APRIL_CONFIG_FLAG_ASYNC_RT_BIT) | (config.flags & APRIL_CONFIG_FLAG_ASYNC_NO_RT_BIT)) == 0;
     aas->force_realtime = (config.flags & APRIL_CONFIG_FLAG_ASYNC_RT_BIT) != 0;
@@ -34,7 +48,10 @@ AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config) {
     aas->model = model;
     aas->fbank = make_fbank(fbank_opts);
 
-    ORT_ABORT_ON_ERROR(g_ort->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &aas->memory_info));
+    if (!aas->fbank || !ort_ok(g_ort->CreateCpuMemoryInfo(OrtArenaAllocator, OrtMemTypeDefault, &aas->memory_info))) {
+        aas_free(aas);
+        return NULL;
+    }
     OrtMemoryInfo *mi = aas->memory_info;
 
     aas->x = alloc_tensor3f(mi, model->x_dim);
@@ -54,6 +71,10 @@ AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config) {
         return NULL;
     }
     aas->context_size = model->context_dim[1];
+    if (aas->context_size == 0) {
+        aas_free(aas);
+        return NULL;
+    }
 
     aas->logits = alloc_tensor3f(mi, model->logits_dim);
 
@@ -62,17 +83,15 @@ AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config) {
     aas->active_token_head = 0;
 
     aas->emitted_silence = true;
-    aas->was_flushed = false;
+    aas->was_flushed = true; /* An empty stream has nothing to infer. */
 
-    assert(aas->fbank          != NULL);
-    assert(aas->x.tensor       != NULL);
-    assert(aas->h[0].tensor    != NULL);
-    assert(aas->c[0].tensor    != NULL);
-    assert(aas->h[1].tensor    != NULL);
-    assert(aas->c[1].tensor    != NULL);
-    assert(aas->eout.tensor    != NULL);
-    assert(aas->context.tensor != NULL);
-    assert(aas->logits.tensor  != NULL);
+    if (!aas->x.tensor || !aas->h[0].tensor || !aas->h[1].tensor ||
+        !aas->c[0].tensor || !aas->c[1].tensor || !aas->eout.tensor ||
+        !aas->dout.tensor || !aas->context.tensor || !aas->logits.tensor) {
+        LOG_ERROR("Could not allocate recognition tensors");
+        aas_free(aas);
+        return NULL;
+    }
 
     aas->handler = config.handler;
     aas->userdata = config.userdata;
@@ -87,17 +106,29 @@ AprilASRSession aas_create_session(AprilASRModel model, AprilConfig config) {
     if(!aas->sync){
         aas->provider = ap_create();
         aas->thread = pt_create(run_aas_callback, aas);
+        if (!aas->provider || !aas->thread) {
+            aas_free(aas);
+            return NULL;
+        }
     }
 
     return aas;
 }
 
 float aas_realtime_get_speedup(AprilASRSession session) {
-    return session->force_realtime ? (float)session->speed_needed : 1.0f;
+    if (!session || !session->force_realtime) return 1.0f;
+    mtx_lock(&session->status_mutex);
+    float result = (float)session->speed_needed;
+    mtx_unlock(&session->status_mutex);
+    return result;
 }
 
 void aas_free(AprilASRSession session) {
     if(session == NULL) return;
+    if (!pt_wait_idle(session->thread)) {
+        LOG_ERROR("Do not free a session from its recognition callback");
+        return;
+    }
 
     pt_free(session->thread);
     ap_free(session->provider);
@@ -114,6 +145,8 @@ void aas_free(AprilASRSession session) {
     free_tensorf(&session->x);
     g_ort->ReleaseMemoryInfo(session->memory_info);
     free_fbank(session->fbank);
+
+    if (session->status_mutex_init) mtx_destroy(&session->status_mutex);
 
     free(session);
 }
@@ -206,7 +239,7 @@ void aas_finalize_tokens(AprilASRSession aas) {
         aas->active_tokens
     );
 
-    aas->last_handler_call_head = aas->active_token_head;
+    aas->last_handler_call_head = 0;
     aas->active_token_head = 0;
 }
 
@@ -294,10 +327,12 @@ bool aas_emit_token(AprilASRSession aas, AprilToken *new_token, bool force){
 }
 
 void aas_clear_context(AprilASRSession aas) {
-    if(aas->context.data[0] == aas->model->params.blank_id) return;
-
-    for(int i=0; i<aas->context_size; i++)
-        aas_update_context(aas, aas->model->params.blank_id);
+    bool changed = false;
+    for (size_t i = 0; i < aas->context_size; ++i) {
+        changed |= aas->context.data[i] != aas->model->params.blank_id;
+        aas->context.data[i] = aas->model->params.blank_id;
+    }
+    if (changed) aas_run_decoder(aas);
 }
 
 // Processes current data in aas->logits. Returns false if new token was
@@ -319,19 +354,23 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
         }
     }
 
-    bool was_context_cleared = aas->context.data[1] == aas->model->params.blank_id;
+    if (max_idx < 0) return true;
+    size_t last_context = aas->context_size - 1;
+    bool was_context_cleared = aas->context.data[last_context] == aas->model->params.blank_id;
 
     // If the current token is equal to previous, ignore early_emit.
     // Helps prevent repeating like ALUMUMUMUMUMUININININIUM which happens for some reason
-    bool is_equal_to_previous = aas->context.data[1] == max_idx;
+    bool is_equal_to_previous = aas->context.data[last_context] == max_idx;
     if(is_equal_to_previous) early_emit = 0.0f;
 
     float blank_val = logits[blank];
     bool is_blank = (blank_val - early_emit) > max_val;
 
 
-    AprilToken token = { get_token(params, max_idx), max_val };
-    token.time_ms = aas->current_time_ms;
+    AprilToken token = {0};
+    token.token = get_token(params, max_idx);
+    size_t source_ms = (size_t)(aas->source_samples * 1000 / params->sample_rate);
+    token.time_ms = aas->current_time_ms < source_ms ? aas->current_time_ms : source_ms;
 
     // works for English and other latin languages, may need to do something
     // different here for other languages like Chinese
@@ -353,8 +392,23 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
     if(is_end_of_sentence) token.flags |= APRIL_TOKEN_FLAG_SENTENCE_END_BIT;
 
     // Be more liberal with applying punctuation (might be just a model issue)
-    if((!was_context_cleared) && is_punctuation && (!is_equal_to_previous) && (max_val > (blank_val - 3.5f))) {
+    if((!was_context_cleared) && is_punctuation && (!is_equal_to_previous) && (max_val > (blank_val - aas->punctuation_bias))) {
         is_blank = false;
+    }
+
+    size_t time_since_emission_ms = aas->current_time_ms - aas->last_emission_time_ms;
+    bool been_long_silence = time_since_emission_ms >= (size_t)aas->silence_ms;
+    bool reasonably_confident = (!is_equal_to_previous) &&
+        (max_val - (float)time_since_emission_ms / 3000.0f > blank_val - 4.0f);
+    bool preview = is_blank && !been_long_silence && aas->speculative && reasonably_confident;
+    /* Blank frames expose no token probability. Avoid a vocabulary-wide
+       softmax there; preserve exactly the same probabilities for emissions. */
+    if (!is_blank || preview) {
+        float peak = fmaxf(max_val, blank_val);
+        double sum = 0.0;
+        for (int i = 0; i < params->token_count; ++i)
+            sum += exp((double)logits[i] - peak);
+        token.logprob = max_val - peak - (float)log(sum);
     }
 
     // If current token is non-blank, emit and return
@@ -399,22 +453,11 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
 
         aas->emitted_silence = false;
     } else {
-        size_t time_since_emission_ms = aas->current_time_ms - aas->last_emission_time_ms;
-
-        // If there's been silence for a while, forcibly reduce confidence to
-        // kill stray prediction
-        max_val -= (float)(time_since_emission_ms)/3000.0f;
-
-        // If current token is blank, but it's reasonably confident, emit
-        bool reasonably_confident = (!is_equal_to_previous) && (max_val > (blank_val - 4.0f));
-
-        bool been_long_silence = time_since_emission_ms >= 2200;
-
         if (been_long_silence) {
             aas_finalize_tokens(aas);
             aas_clear_context(aas);
             aas_emit_silence(aas);
-        } else if(reasonably_confident) {
+        } else if(preview) {
             token.logprob -= 8.0;
             if(aas_emit_token(aas, &token, false)) {
                 assert(aas->active_token_head > 0);
@@ -430,9 +473,9 @@ bool aas_process_logits(AprilASRSession aas, float early_emit){
 
 bool aas_infer(AprilASRSession aas){
     if(!aas->dout_init) {
-        for(size_t i=0; i<aas->context_size; i++) {
-            aas_update_context(aas, aas->model->params.blank_id);
-        }
+        for(size_t i=0; i<aas->context_size; i++)
+            aas->context.data[i] = aas->model->params.blank_id;
+        aas_run_decoder(aas);
 
         aas->dout_init = true;
     }
@@ -442,24 +485,23 @@ bool aas_infer(AprilASRSession aas){
         size_t stride_ms = fbank_get_segments_stride_ms(aas->fbank);
         aas->current_time_ms += stride_ms;
 
-        clock_t clock_start = clock();
+        double clock_start = april_now_ms();
 
         aas_run_encoder(aas);
 
-        float early_emit = 2.0f;
-        for(int i=0; i<3; i++){
-            early_emit -= 1.0f;
+        for(int i=0; i<aas->max_symbols; i++){
+            float early_emit = i == 0 ? aas->early_emit : 0.0f;
             aas_run_joiner(aas);
             if(aas_process_logits(aas, early_emit > 0.0f ? early_emit : 0.0f)) break;
         }
 
-        clock_t clock_end = clock();
-
-        double time_used_ms = ((double)(clock_end - clock_start) * 1000.0) / ((double)CLOCKS_PER_SEC);
+        double time_used_ms = april_now_ms() - clock_start;
         double stride_ms_d = (double)stride_ms;
 
         double speed_needed = (time_used_ms * 1.1) / stride_ms_d;
+        mtx_lock(&aas->status_mutex);
         aas->speed_needed = ((aas->speed_needed * 9.0) + speed_needed)/10.0;
+        mtx_unlock(&aas->status_mutex);
 
         aas->time_since_update_speed += stride_ms;
 
@@ -477,19 +519,11 @@ bool aas_infer(AprilASRSession aas){
 
 void _aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count);
 void aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count) {
+    if (!session || !short_count || !pcm16) return;
     if(session->sync) return _aas_feed_pcm16(session, pcm16, short_count);
 
     bool success = ap_push_audio(session->provider, pcm16, short_count);
-    pt_raise(session->thread, PT_FLAG_AUDIO);
-
-    if(!success){
-        session->handler(
-            session->userdata,
-            APRIL_RESULT_ERROR_CANT_KEEP_UP,
-            0,
-            NULL
-        );
-    }
+    pt_raise(session->thread, PT_FLAG_AUDIO | (success ? 0 : PT_FLAG_OVERFLOW));
 }
 
 
@@ -525,6 +559,7 @@ void _aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count) 
         fwrite(wave, sizeof(float), remaining, fd);
 #endif
 
+        session->source_samples += remaining;
         fbank_accept_waveform(session->fbank, wave, remaining);
 
         aas_infer(session);
@@ -539,9 +574,24 @@ void _aas_feed_pcm16(AprilASRSession session, short *pcm16, size_t short_count) 
 
 void _aas_flush(AprilASRSession session);
 void aas_flush(AprilASRSession session) {
+    if (!session) return;
     if(session->sync) return _aas_flush(session);
 
+    /* The mark keeps the boundary in order with the queued audio, so audio
+       fed before the worker reaches it still belongs to the next utterance. */
+    if (!ap_mark_flush(session->provider))
+        LOG_WARNING("Too many pending flushes; merging the newest utterances");
     pt_raise(session->thread, PT_FLAG_FLUSH);
+}
+
+int aas_wait(AprilASRSession session) {
+    return session && (session->sync || pt_wait_idle(session->thread));
+}
+
+size_t aas_get_backlog_ms(AprilASRSession session) {
+    if (!session || session->sync) return 0;
+    size_t samples = ap_pending_samples(session->provider);
+    return (size_t)((uint64_t)samples * 1000 / session->model->params.sample_rate);
 }
 
 void _aas_flush(AprilASRSession session) {
@@ -549,37 +599,69 @@ void _aas_flush(AprilASRSession session) {
 
     session->was_flushed = true;
 
-    while(fbank_flush(session->fbank))
+    while(fbank_finish(session->fbank))
         aas_infer(session);
 
-    for(int i=0; i<2; i++)
-        fbank_accept_waveform(session->fbank, NULL, SEGSIZE);
+    /* A short right context is sufficient to settle the final tokens. The old
+       path ran two large padding loops plus 400 ms of silence for every flush. */
+    size_t remaining = session->model->params.sample_rate / 5; // 200 ms
+    while (remaining) {
+        size_t count = remaining > SEGSIZE ? SEGSIZE : remaining;
+        fbank_accept_waveform(session->fbank, NULL, count);
+        aas_infer(session);
+        remaining -= count;
+    }
 
-    while(fbank_flush(session->fbank))
+    while(fbank_finish(session->fbank))
         aas_infer(session);
 
     aas_finalize_tokens(session);
-    aas_clear_context(session);
     aas_emit_silence(session);
+
+    /* Flushing ends this utterance. Recurrence, feature overlap and Sonic's
+       pending audio must not carry into the next one. Keep the FFT/mel tables. */
+    double speed = fbank_get_speed(session->fbank);
+    fbank_reset(session->fbank);
+    /* The realtime speedup reflects the machine, not the utterance. */
+    if (session->force_realtime) fbank_set_speed(session->fbank, speed);
+    for (int i = 0; i < 2; ++i) {
+        memset(session->h[i].data, 0, sizeof(float) * SHAPE_PRODUCT3(session->model->h_dim));
+        memset(session->c[i].data, 0, sizeof(float) * SHAPE_PRODUCT3(session->model->c_dim));
+    }
+    session->hc_use_0 = false;
+    session->dout_init = false;
+    session->last_handler_call_head = 0;
+    session->current_time_ms = (size_t)(session->source_samples * 1000 / session->model->params.sample_rate);
+    session->last_emission_time_ms = session->current_time_ms;
 }
 
+
+static void aas_report_overflow(AprilASRSession session) {
+    session->handler(session->userdata, APRIL_RESULT_ERROR_CANT_KEEP_UP, 0, NULL);
+}
 
 void run_aas_callback(void *userdata, int flags) {
     AprilASRSession session = userdata;
 
-    if(flags & PT_FLAG_FLUSH) {
-        _aas_flush(session);
-    }
+    if(flags & PT_FLAG_OVERFLOW) aas_report_overflow(session);
 
-    if(flags & PT_FLAG_AUDIO) {
-        for(;;){
-            size_t short_count = 3200;
-            short *shorts = ap_pull_audio(session->provider, &short_count);
-            if(short_count == 0) return;
+    /* Work in bounded batches. Under sustained overload the queue may never
+       drain, so overflow raised meanwhile is reported between batches rather
+       than once input stops. Flush marks split the queue into utterances. */
+    for(;;){
+        if(pt_take_flags(session->thread, PT_FLAG_OVERFLOW)) aas_report_overflow(session);
 
-            _aas_feed_pcm16(session, shorts, short_count);
-
-            ap_pull_audio_finish(session->provider, short_count);
+        if(ap_take_flush(session->provider)) {
+            _aas_flush(session);
+            continue;
         }
+
+        size_t short_count = SEGSIZE;
+        short *shorts = ap_pull_audio(session->provider, &short_count);
+        if(short_count == 0) break;
+
+        _aas_feed_pcm16(session, shorts, short_count);
+
+        ap_pull_audio_finish(session->provider, short_count);
     }
 }

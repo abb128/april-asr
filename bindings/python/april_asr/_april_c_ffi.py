@@ -37,7 +37,7 @@ class AprilConfig(ctypes.Structure):
                 ("flags", AprilConfigFlagBits)]
 
 def _init_library_functions(lib):
-    lib.aam_api_init.argtypes = []
+    lib.aam_api_init.argtypes = [ctypes.c_int]
     lib.aam_api_init.restype = None
 
     lib.aam_create_model.argtypes = [ctypes.c_char_p]
@@ -67,6 +67,14 @@ def _init_library_functions(lib):
     lib.aas_flush.argtypes = [ctypes.c_void_p]
     lib.aas_flush.restype = None
 
+    if hasattr(lib, "aas_wait"):
+        lib.aas_wait.argtypes = [ctypes.c_void_p]
+        lib.aas_wait.restype = ctypes.c_int
+
+    if hasattr(lib, "aas_get_backlog_ms"):
+        lib.aas_get_backlog_ms.argtypes = [ctypes.c_void_p]
+        lib.aas_get_backlog_ms.restype = ctypes.c_size_t
+
     lib.aas_realtime_get_speedup.argtypes = [ctypes.c_void_p]
     lib.aas_realtime_get_speedup.restype = ctypes.c_float
 
@@ -77,6 +85,7 @@ def _init_library_functions(lib):
 class AprilFFI:
     """Provides all of the C functions to interact with the nativel ibrary"""
     def __init__(self, path):
+        os.environ["ORT_DISABLE_TELEMETRY"] = "1"
         try:
             self.lib = ctypes.cdll.LoadLibrary(path)
         except OSError:
@@ -90,6 +99,8 @@ class AprilFFI:
         self.aam_free                  = self.lib.aam_free
         self.aas_create_session        = self.lib.aas_create_session
         self.aas_flush                 = self.lib.aas_flush
+        self.aas_wait                  = getattr(self.lib, "aas_wait", None)
+        self.aas_get_backlog_ms        = getattr(self.lib, "aas_get_backlog_ms", None)
         self.aas_realtime_get_speedup  = self.lib.aas_realtime_get_speedup
         self.aas_free                  = self.lib.aas_free
 
@@ -111,6 +122,10 @@ class AprilFFI:
 
     def aas_feed_pcm16(self, session, data):
         """Equivalent to aas_feed_pcm16 in the C header"""
+        if not isinstance(data, bytes):
+            raise TypeError("PCM16 data must be bytes")
+        if len(data) % 2:
+            raise ValueError("PCM16 data must contain complete 16-bit samples")
         return self.lib.aas_feed_pcm16(session,
             ctypes.cast(data, ctypes.POINTER(ctypes.c_short)), len(data) // 2)
 
@@ -129,7 +144,7 @@ def _load_library():
     elif sys.platform == "linux":
         return AprilFFI(os.path.join(dlldir, "libaprilasr.so"))
     elif sys.platform == "darwin":
-        return AprilFFI(os.path.join(dlldir, "libaprilasr.dyld"))
+        return AprilFFI(os.path.join(dlldir, "libaprilasr.dylib"))
     else:
         raise Exception("Unsupported platform")
 

@@ -17,66 +17,73 @@
 #ifndef _APRIL_MODEL_FILE_UTIL
 #define _APRIL_MODEL_FILE_UTIL
 
-#ifdef _MSC_VER
-
-// Assuming Windows is always little-endian
-#define le32toh(x) x
-#define le64toh(x) x
-
-#elif __APPLE__
-
-// Assuming OSX is always little-endian
-#define le32toh(x) x
-#define le64toh(x) x
-
-#else
-#include <endian.h>
-#endif
-
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "log.h"
+#include <string.h>
+#include <limits.h>
 
-static inline uint32_t mfu_read_u32(FILE *fd) {
-    uint32_t v;
-    fread(&v, sizeof(uint32_t), 1, fd);
-    v = le32toh(v);
-    return v;
-}
+/* All reads are confined to the declared section, including skips and strings.
+   Decode explicitly so short reads and unaligned/type-punned loads are safe. */
+typedef struct ModelReader {
+    FILE *fd;
+    uint64_t remaining;
+    bool ok;
+} ModelReader;
 
-static inline uint64_t mfu_read_u64(FILE *fd) {
-    uint64_t v;
-    fread(&v, sizeof(uint64_t), 1, fd);
-    v = le64toh(v);
-    return v;
-}
-
-static inline int32_t mfu_read_i32(FILE *fd) {
-    uint32_t v;
-    fread(&v, sizeof(uint32_t), 1, fd);
-    v = le32toh(v);
-    return *((int32_t *)&v);
-}
-
-static inline int64_t mfu_read_i64(FILE *fd) {
-    uint64_t v;
-    fread(&v, sizeof(uint64_t), 1, fd);
-    v = le64toh(v);
-    return *((int64_t *)&v);
-}
-
-// Must be freed manually with free(v)
-static inline char *mfu_alloc_read_string(FILE *fd) {
-    uint64_t size = mfu_read_u64(fd);
-    char *v = (char *)malloc(size + 1);
-    if(v == NULL) {
-        LOG_ERROR("failed allocating string of size %zu, file position %ld", size, ftell(fd));
-        exit(-1);
+static inline bool mfu_read(ModelReader *r, void *out, size_t size) {
+    if (!r->ok || size > r->remaining || fread(out, 1, size, r->fd) != size) {
+        r->ok = false;
+        return false;
     }
-    fread(v, 1, size, fd);
-    v[size] = '\0';
-    return v;
+    r->remaining -= size;
+    return true;
+}
+
+static inline bool mfu_skip(ModelReader *r, uint64_t size) {
+    if (!r->ok || size > r->remaining || size > LONG_MAX || fseek(r->fd, (long)size, SEEK_CUR)) {
+        r->ok = false;
+        return false;
+    }
+    r->remaining -= size;
+    return true;
+}
+
+static inline uint32_t mfu_read_u32(ModelReader *r) {
+    unsigned char v[4] = {0};
+    if (!mfu_read(r, v, sizeof(v))) return 0;
+    return (uint32_t)v[0] | (uint32_t)v[1] << 8 | (uint32_t)v[2] << 16 | (uint32_t)v[3] << 24;
+}
+
+static inline uint64_t mfu_read_u64(ModelReader *r) {
+    uint64_t low = mfu_read_u32(r);
+    uint64_t high = mfu_read_u32(r);
+    return low | high << 32;
+}
+
+static inline int32_t mfu_read_i32(ModelReader *r) {
+    uint32_t bits = mfu_read_u32(r);
+    int32_t value;
+    memcpy(&value, &bits, sizeof(value));
+    return value;
+}
+
+static inline char *mfu_alloc_read_string(ModelReader *r) {
+    uint64_t size = mfu_read_u64(r);
+    /* Metadata is text, not network weights; cap individual strings at 1 MiB. */
+    if (!r->ok || size > r->remaining || size > 1024 * 1024) {
+        r->ok = false;
+        return NULL;
+    }
+    char *value = malloc((size_t)size + 1);
+    if (!value || !mfu_read(r, value, (size_t)size)) {
+        free(value);
+        r->ok = false;
+        return NULL;
+    }
+    value[size] = '\0';
+    return value;
 }
 
 #endif

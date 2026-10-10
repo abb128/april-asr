@@ -40,25 +40,39 @@ set(ONNXRuntime_ROOT_DIR
     "${ONNXRuntime_ROOT_DIR}"
     CACHE PATH "Root to search for ONNXRuntime")
 
-find_package(PkgConfig)
-pkg_check_modules(PC_ONNXRuntime QUIET libonnxruntime)
+find_package(PkgConfig QUIET)
+if(PkgConfig_FOUND)
+    pkg_check_modules(PC_ONNXRuntime QUIET libonnxruntime)
+endif()
 
+# An SDK in ONNXRuntime_ROOT_DIR (ONNX_ROOT, or the downloaded lib/) takes
+# precedence over a system copy, so headers and library always come from the
+# same place.
 find_library(
     ONNXRuntime_LIBRARY
     NAMES onnxruntime
     PATHS ${ONNXRuntime_ROOT_DIR}
     PATH_SUFFIXES lib
-    HINTS ${PC_ONNXRuntime_LIBRARY_DIRS})
+    NO_DEFAULT_PATH)
 find_path(
-    ONNXRuntime_INCLUDE_DIR onnxruntime_cxx_api.h
+    ONNXRuntime_INCLUDE_DIR onnxruntime_c_api.h
     PATHS ${ONNXRuntime_ROOT_DIR}
     PATH_SUFFIXES onnxruntime include include/onnxruntime onnxruntime/core/session
+                  include/onnxruntime/core/session
+    NO_DEFAULT_PATH)
+find_library(
+    ONNXRuntime_LIBRARY
+    NAMES onnxruntime
+    HINTS ${PC_ONNXRuntime_LIBRARY_DIRS})
+find_path(
+    ONNXRuntime_INCLUDE_DIR onnxruntime_c_api.h
+    PATH_SUFFIXES onnxruntime include/onnxruntime onnxruntime/core/session
                   include/onnxruntime/core/session
     HINTS ${PC_ONNXRuntime_INCLUDE_DIRS})
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
-    ONNXRuntime REQUIRED_VARS ONNXRuntime_INCLUDE_DIR ONNXRuntime_LIBRARY)
+    ONNXRuntime REQUIRED_VARS ONNXRuntime_LIBRARY ONNXRuntime_INCLUDE_DIR)
 
 if(ONNXRuntime_FOUND)
     set(ONNXRuntime_INCLUDE_DIRS ${ONNXRuntime_INCLUDE_DIR})

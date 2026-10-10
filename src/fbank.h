@@ -47,6 +47,9 @@ typedef struct FBankOptions {
 
     // ???????????
     bool snip_edges;
+    // Correct frame length, Povey window and reflected edge handling.
+    // False retains historical April features for comparison.
+    bool corrected_window;
 
     // How many segments to pull in fbank_pull_segments.
     // For example, if this is equal to 9, then you should call
@@ -69,6 +72,8 @@ OnlineFBank make_fbank(FBankOptions opts);
 void fbank_accept_waveform(OnlineFBank fbank, float *wave, size_t wave_count);
 bool fbank_pull_segments(OnlineFBank fbank, float *output, size_t output_count);
 bool fbank_flush(OnlineFBank fbank); // Returns false if no more left to flush
+bool fbank_finish(OnlineFBank fbank); // Pad only until real pending frames are consumed
+void fbank_reset(OnlineFBank fbank); // Start a new utterance, reusing FFT/filter allocations
 
 void fbank_set_speed(OnlineFBank fbank, double factor);
 double fbank_get_speed(OnlineFBank fbank);

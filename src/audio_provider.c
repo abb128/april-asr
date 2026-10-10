@@ -15,88 +15,117 @@
 */
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "common.h"
-#include "log.h"
 #include "audio_provider.h"
-
-#ifdef _MSC_VER
-#define _Atomic volatile
-#endif
-
-#define MIN(A, B) ((A) < (B)) ? (A) : (B)
+#include "thread_compat.h"
 
 #define MAX_AUDIO 48000
+#define MAX_FLUSH_MARKS 64
 struct AudioProvider_i {
     short audio[MAX_AUDIO];
-
-    // Current index to read data
-    _Atomic size_t head;
-
-    // Current index to write data
-    _Atomic size_t tail;
+    size_t head, tail, count;
+    /* Absolute sample positions; marks are positions in pushed audio. */
+    uint64_t pushed, pulled;
+    uint64_t marks[MAX_FLUSH_MARKS];
+    size_t mark_head, mark_count;
+    mtx_t mutex;
 };
 
-AudioProvider ap_create() {
-    AudioProvider ap = (AudioProvider)calloc(1, sizeof(struct AudioProvider_i));
-    if(ap == NULL) return NULL;
-
+AudioProvider ap_create(void) {
+    AudioProvider ap = calloc(1, sizeof(*ap));
+    if (!ap) return NULL;
+    if (mtx_init(&ap->mutex, mtx_plain) != thrd_success) {
+        free(ap);
+        return NULL;
+    }
     return ap;
 }
 
-bool ap_push_audio(AudioProvider ap, const short *audio, size_t short_count) {
-    if(short_count > (MAX_AUDIO / 2)) {
-        LOG_WARNING("AudioProvider is being given a lot of audio (%zu samples), please reduce", short_count);
+bool ap_push_audio(AudioProvider ap, const short *audio, size_t count) {
+    if (!ap || (!audio && count)) return false;
+    mtx_lock(&ap->mutex);
+    if (count > MAX_AUDIO - ap->count) {
+        mtx_unlock(&ap->mutex);
+        return false;
     }
-
-    size_t audio_head = 0;
-    while(short_count > 0){
-        size_t num_samples_available = (ap->tail > ap->head) ? (ap->tail - ap->head) : ((MAX_AUDIO - ap->head) + ap->tail);
-        if(ap->tail == ap->head) num_samples_available = 0;
-         
-        bool will_overflow = (num_samples_available + short_count) >= MAX_AUDIO;
-
-        if(will_overflow){
-            LOG_WARNING("Can't keep up! Attempted to write %zu samples", short_count);
-            return false;
-        }
-
-        size_t num_shorts_to_write = MIN(short_count, MAX_AUDIO - ap->tail);
-        memcpy(&ap->audio[ap->tail], &audio[audio_head], num_shorts_to_write * 2);
-
-        ap->tail = (ap->tail + num_shorts_to_write) % MAX_AUDIO;
-        short_count -= num_shorts_to_write;
-        audio_head += num_shorts_to_write;
-    }
-
+    /* Publish the complete write in one transaction, including wraparound. */
+    size_t first = count < MAX_AUDIO - ap->tail ? count : MAX_AUDIO - ap->tail;
+    if (first) memcpy(ap->audio + ap->tail, audio, first * sizeof(short));
+    if (count > first) memcpy(ap->audio, audio + first, (count - first) * sizeof(short));
+    ap->tail = (ap->tail + count) % MAX_AUDIO;
+    ap->count += count;
+    ap->pushed += count;
+    mtx_unlock(&ap->mutex);
     return true;
 }
 
-short *ap_pull_audio(AudioProvider ap, size_t *short_count) {
-    if(ap->tail == ap->head) {
-        *short_count = 0;
-        return NULL;
+short *ap_pull_audio(AudioProvider ap, size_t *count) {
+    mtx_lock(&ap->mutex);
+    size_t available = ap->count;
+    if (*count && available > *count) available = *count;
+    if (available > MAX_AUDIO - ap->head) available = MAX_AUDIO - ap->head;
+    if (ap->mark_count) {
+        uint64_t until_mark = ap->marks[ap->mark_head] - ap->pulled;
+        if (available > until_mark) available = (size_t)until_mark;
     }
-
-    size_t num_samples_available = (ap->tail > ap->head) ? (ap->tail - ap->head) : ((MAX_AUDIO - ap->head) + ap->tail);
-    if(*short_count != 0){
-        num_samples_available = MIN(num_samples_available, *short_count);
-    }
-
-    num_samples_available = MIN(num_samples_available, (MAX_AUDIO - ap->head));
-
-    *short_count = num_samples_available;
-
-    return &ap->audio[ap->head];
+    *count = available;
+    short *result = available ? ap->audio + ap->head : NULL;
+    mtx_unlock(&ap->mutex);
+    /* The single consumer owns these slots until pull_audio_finish. */
+    return result;
 }
 
+void ap_pull_audio_finish(AudioProvider ap, size_t count) {
+    mtx_lock(&ap->mutex);
+    if (count <= ap->count) {
+        ap->head = (ap->head + count) % MAX_AUDIO;
+        ap->count -= count;
+        ap->pulled += count;
+    }
+    mtx_unlock(&ap->mutex);
+}
 
-void ap_pull_audio_finish(AudioProvider ap, size_t short_count) {
-    ap->head = (ap->head + short_count) % MAX_AUDIO;
+bool ap_mark_flush(AudioProvider ap) {
+    if (!ap) return false;
+    bool ok = true;
+    mtx_lock(&ap->mutex);
+    size_t last = (ap->mark_head + ap->mark_count + MAX_FLUSH_MARKS - 1) % MAX_FLUSH_MARKS;
+    if (ap->mark_count && ap->marks[last] == ap->pushed) {
+        /* Nothing was pushed since the last flush. */
+    } else if (ap->mark_count == MAX_FLUSH_MARKS) {
+        ap->marks[last] = ap->pushed;
+        ok = false;
+    } else {
+        ap->marks[(ap->mark_head + ap->mark_count++) % MAX_FLUSH_MARKS] = ap->pushed;
+    }
+    mtx_unlock(&ap->mutex);
+    return ok;
+}
+
+bool ap_take_flush(AudioProvider ap) {
+    if (!ap) return false;
+    mtx_lock(&ap->mutex);
+    bool reached = ap->mark_count && ap->marks[ap->mark_head] == ap->pulled;
+    if (reached) {
+        ap->mark_head = (ap->mark_head + 1) % MAX_FLUSH_MARKS;
+        ap->mark_count--;
+    }
+    mtx_unlock(&ap->mutex);
+    return reached;
+}
+
+size_t ap_pending_samples(AudioProvider ap) {
+    if (!ap) return 0;
+    mtx_lock(&ap->mutex);
+    size_t count = ap->count;
+    mtx_unlock(&ap->mutex);
+    return count;
 }
 
 void ap_free(AudioProvider ap) {
+    if (!ap) return;
+    mtx_destroy(&ap->mutex);
     free(ap);
 }

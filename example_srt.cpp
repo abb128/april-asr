@@ -73,17 +73,17 @@ void handler(void *userdata, AprilResultType result, size_t count, const AprilTo
             int start_seconds = 0;
             int start_milliseconds = 0;
 
-            while(timeStart > 3600 * 1000) {
+            while(timeStart >= 3600 * 1000) {
                 timeStart -= 3600 * 1000;
                 start_hours++;
             }
             
-            while(timeStart > 60 * 1000) {
+            while(timeStart >= 60 * 1000) {
                 timeStart -= 60 * 1000;
                 start_minutes++;
             }
             
-            while(timeStart > 1000) {
+            while(timeStart >= 1000) {
                 timeStart -= 1000;
                 start_seconds++;
             }
@@ -96,17 +96,17 @@ void handler(void *userdata, AprilResultType result, size_t count, const AprilTo
             int end_seconds = 0;
             int end_milliseconds = 0;
             
-            while(timeEnd > 3600 * 1000) {
+            while(timeEnd >= 3600 * 1000) {
                 timeEnd -= 3600 * 1000;
                 end_hours++;
             }
             
-            while(timeEnd > 60 * 1000) {
+            while(timeEnd >= 60 * 1000) {
                 timeEnd -= 60 * 1000;
                 end_minutes++;
             }
             
-            while(timeEnd > 1000) {
+            while(timeEnd >= 1000) {
                 timeEnd -= 1000;
                 end_seconds++;
             }
@@ -136,7 +136,6 @@ int main(int argc, char *argv[]){
         return 1;
     }
 
-    const char *input_file = argv[1];
     const char *input_model = argv[2];
     
     // In the start of our program we should call aam_api_init.
@@ -170,6 +169,7 @@ int main(int argc, char *argv[]){
     config.flags = APRIL_CONFIG_FLAG_ZERO_BIT;
 
     AprilASRSession session = aas_create_session(model, config);
+    if (!session) { aam_free(model); return 2; }
 
 
     if(argv[1][0] == '-' && argv[1][1] == 0) {
@@ -178,20 +178,24 @@ int main(int argc, char *argv[]){
         // You can achieve this on Linux like this:
         // $ parec --format=s16 --rate=16000 --channels=1 --latency-ms=100 | ./main - /path/to/model.april
 
-        char data[BUFFER_SIZE];
-        ssize_t r;
-        for(;;){
-            r = read(STDIN_FILENO, data, BUFFER_SIZE);
-            
-            if (r == -1) {
+        unsigned char data[BUFFER_SIZE + 1];
+        short samples[BUFFER_SIZE / 2 + 1];
+        size_t carry = 0;
+        for (;;) {
+            ssize_t r = read(STDIN_FILENO, data + carry, BUFFER_SIZE - carry);
+            if (r < 0 && errno == EINTR) continue;
+            if (r <= 0) {
+                if (r < 0) perror("stdin");
+                if (carry) fprintf(stderr, "Incomplete PCM16 sample at EOF\n");
                 aas_flush(session);
                 break;
-            } else
-            if (r <= 0) {
-                continue;
             }
-            
-            aas_feed_pcm16(session, (short *)data, r/2);
+            size_t bytes = carry + (size_t)r;
+            for (size_t i = 0; i < bytes / 2; ++i)
+                samples[i] = (short)(data[i*2] | ((unsigned)data[i*2+1] << 8));
+            aas_feed_pcm16(session, samples, bytes / 2);
+            carry = bytes & 1;
+            if (carry) data[0] = data[bytes - 1];
         }
     } else if (argv[1][0] == '?' && argv[1][1] == 0) {
         // Run some blank data, mainly for memory leak testing
@@ -218,15 +222,25 @@ int main(int argc, char *argv[]){
         // Verify the RIFF header if supplied
         if(ends_with(argv[1], ".wav")) {
             wav_header header;
-            fread(&header, 1L, 44L, fd);
+            if (sz < 44 || fread(&header, 1L, 44L, fd) != 44) {
+                fprintf(stderr, "Truncated WAV header\n");
+                fclose(fd); aas_free(session); aam_free(model); return 2;
+            }
 
-            bool is_valid_wav = (header.fmt_chunk_size == 16)
+            bool is_valid_wav = !memcmp(header.riff_header, "RIFF", 4)
+                             && !memcmp(header.wave_header, "WAVE", 4)
+                             && !memcmp(header.data_header, "data", 4)
+                             && header.bit_depth == 16
+                             && header.sample_alignment == 2
+                             && header.data_bytes <= sz - 44
+                             && (header.data_bytes % 2) == 0
+                             && (header.fmt_chunk_size == 16)
                              && (header.audio_format == 1)
                              && (header.sample_rate == model_sample_rate)
                              && (header.num_channels == 1);
             
             if(!is_valid_wav){
-                fprintf(stderr, "Wave file must be single-channel 16-bit PCM sampled in %llu Hz!\n", model_sample_rate);
+                fprintf(stderr, "Wave file must be single-channel 16-bit PCM sampled in %zu Hz!\n", model_sample_rate);
                 return 2;
             }
 

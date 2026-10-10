@@ -19,154 +19,104 @@
 #include "common.h"
 #include "log.h"
 #include "proc_thread.h"
-
-#ifndef USE_TINYCTHREAD
-#include <threads.h>
-#else
-#include "tinycthread/tinycthread.h"
-#endif
-
-int run_pt(void *userdata);
+#include "thread_compat.h"
 
 struct ProcThread_i {
-    volatile bool initialized;
-    volatile bool terminating;
-    volatile int flags;
-
-    bool thrd_init;
+    int flags;
+    bool working;
+    bool terminating;
+    bool thrd_init, cond_init, mutex_init;
     thrd_t thrd;
-
-    bool cond_init;
     cnd_t cond;
-
-    bool mutex_init;
     mtx_t mutex;
-
     ProcThreadCallback callback;
     void *userdata;
 };
 
-ProcThread pt_create(ProcThreadCallback callback, void *userdata) {
-    ProcThread thread = (ProcThread)calloc(1, sizeof(struct ProcThread_i));
-    if(thread == NULL) return NULL;
+static int run_pt(void *userdata) {
+    ProcThread thread = userdata;
+    mtx_lock(&thread->mutex);
+    for (;;) {
+        /* The predicate is the queue, not the notification. A signal received
+           during inference must be processed before going back to sleep. */
+        while (!thread->flags && !thread->terminating)
+            cnd_wait(&thread->cond, &thread->mutex);
+        if (thread->terminating) break;
+        int flags = thread->flags;
+        thread->flags = 0;
+        thread->working = true;
+        mtx_unlock(&thread->mutex);
+        thread->callback(thread->userdata, flags);
+        mtx_lock(&thread->mutex);
+        thread->working = false;
+        cnd_broadcast(&thread->cond);
+    }
+    mtx_unlock(&thread->mutex);
+    return 0;
+}
 
-    thread->initialized = false;
+ProcThread pt_create(ProcThreadCallback callback, void *userdata) {
+    if (!callback) return NULL;
+    ProcThread thread = calloc(1, sizeof(*thread));
+    if (!thread) return NULL;
     thread->callback = callback;
     thread->userdata = userdata;
-
-    if(cnd_init(&thread->cond) != thrd_success){
-        LOG_WARNING("Failed to initialize cnd_t");
-        pt_free(thread);
-        return NULL;
-    }else{
-        thread->cond_init = true;
-    }
-
-    if(mtx_init(&thread->mutex, mtx_plain) != thrd_success){
-        LOG_WARNING("Failed to initialize mutex");
-        pt_free(thread);
-        return NULL;
-    }else{
-        thread->mutex_init = true;
-    }
-
-    if(thrd_create(&thread->thrd, run_pt, thread) != thrd_success) {
-        LOG_WARNING("Failed to start thread");
-        pt_free(thread);
-        return NULL;
-    }else{
-        thread->thrd_init = true;
-    }
-
+    if (cnd_init(&thread->cond) != thrd_success) goto fail;
+    thread->cond_init = true;
+    if (mtx_init(&thread->mutex, mtx_plain) != thrd_success) goto fail;
+    thread->mutex_init = true;
+    if (thrd_create(&thread->thrd, run_pt, thread) != thrd_success) goto fail;
+    thread->thrd_init = true;
     return thread;
+fail:
+    pt_free(thread);
+    return NULL;
 }
 
 void pt_raise(ProcThread thread, int flag) {
-    if(mtx_lock(&thread->mutex) != thrd_success){
-        LOG_ERROR("Failed to lock mutex in pt_raise!");
+    if (!thread) return;
+    mtx_lock(&thread->mutex);
+    if (!thread->terminating) {
+        thread->flags |= flag;
+        cnd_broadcast(&thread->cond);
     }
-
-    thread->flags |= flag;
-
-    if(mtx_unlock(&thread->mutex) != thrd_success){
-        LOG_ERROR("Failed to unlock mutex in pt_raise!");
-    }
-
-    while(!thread->initialized) {}
-    if(cnd_signal(&thread->cond) != thrd_success){
-        LOG_ERROR("Failed to signal cond!");
-    }
+    mtx_unlock(&thread->mutex);
 }
 
-void pt_terminate(ProcThread thread) {
-    if(thread->terminating) return;
+int pt_take_flags(ProcThread thread, int mask) {
+    if (!thread) return 0;
+    mtx_lock(&thread->mutex);
+    int flags = thread->flags & mask;
+    thread->flags &= ~mask;
+    mtx_unlock(&thread->mutex);
+    return flags;
+}
 
-    thread->terminating = true;
-    for(int i=0; i<8; i++) pt_raise(thread, PT_FLAG_KILL);
-
-    int res;
-    if(thrd_join(thread->thrd, &res) != thrd_success){
-        LOG_ERROR("Failed to join thread!");
-        return;
-    }
-
-    if(res != 0){
-        LOG_ERROR("Thread exited with non-zero status %d!", res);
-    }
+bool pt_wait_idle(ProcThread thread) {
+    if (!thread) return true;
+    /* Waiting inside the result callback would deadlock the same worker. */
+    if (thrd_equal(thrd_current(), thread->thrd)) return false;
+    mtx_lock(&thread->mutex);
+    while (thread->flags || thread->working)
+        cnd_wait(&thread->cond, &thread->mutex);
+    mtx_unlock(&thread->mutex);
+    return true;
 }
 
 void pt_free(ProcThread thread) {
-    if(thread == NULL) return;
-    
-    if(thread->thrd_init && thread->mutex_init && thread->cond_init){
-        pt_terminate(thread);
+    if (!thread) return;
+    if (thread->thrd_init) {
+        if (!pt_wait_idle(thread)) {
+            LOG_ERROR("Do not free a session from its recognition callback");
+            return;
+        }
+        mtx_lock(&thread->mutex);
+        thread->terminating = true;
+        cnd_signal(&thread->cond);
+        mtx_unlock(&thread->mutex);
+        thrd_join(thread->thrd, NULL);
     }
-
-    if(thread->mutex_init){
-        mtx_destroy(&thread->mutex);
-    }
-
-    if(thread->cond_init){
-        cnd_destroy(&thread->cond);
-    }
-
+    if (thread->mutex_init) mtx_destroy(&thread->mutex);
+    if (thread->cond_init) cnd_destroy(&thread->cond);
     free(thread);
-}
-
-
-
-int run_pt(void *userdata){
-    ProcThread thread = (ProcThread)userdata;
-
-    if(mtx_lock(&thread->mutex) != thrd_success){
-        LOG_ERROR("Failed to lock mutex!");
-        return 1;
-    }
-
-    for(;;){
-        thread->initialized = true;
-        if(cnd_wait(&thread->cond, &thread->mutex) != thrd_success) {
-            LOG_ERROR("Failed to wait for cond!");
-            return 2;
-        }
-
-        int flags = thread->flags;
-        thread->flags = 0;
-
-        if(mtx_unlock(&thread->mutex) != thrd_success) {
-            LOG_ERROR("Failed to unlock mutex!");
-            return 3;
-        }
-
-        if((flags & PT_FLAG_KILL) || (thread->terminating)) return 0;
-
-        thread->callback(thread->userdata, flags);
-
-        if((thread->flags & PT_FLAG_KILL) || (thread->terminating)) return 0;
-
-        if(mtx_lock(&thread->mutex) != thrd_success){
-            LOG_ERROR("Failed to lock mutex! 1");
-            return 4;
-        }
-    }
 }

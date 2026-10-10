@@ -98,11 +98,47 @@ public class Session {
         AprilAsrNative.aas_feed_pcm16(this.handle, data, (long)length);
     }
 
+    /**
+     * If the session is asynchronous and realtime, returns the factor by
+     * which audio is being sped up to keep up. Sessions created with noRT
+     * never speed up audio and always return 1.0; use getBacklogMs instead.
+     */
     public float getRTSpeedup() {
         return AprilAsrNative.aas_realtime_get_speedup(this.handle);
     }
 
+    /**
+     * Returns how many milliseconds of fed audio an asynchronous session has
+     * not processed yet, or 0 for a synchronous session. A backlog that keeps
+     * growing means the system cannot keep up; once the internal buffer is
+     * full, audio is dropped and onErrorCantKeepUp is called.
+     */
+    public long getBacklogMs() {
+        return AprilAsrNative.aas_get_backlog_ms(this.handle).longValue();
+    }
+
+    /**
+     * Flush any remaining samples and force the session to produce a final
+     * result. In an asynchronous session the flush is queued in order with
+     * the audio, so audio fed afterwards belongs to the next utterance and
+     * feeding may continue immediately. Call {@link #waitIdle()} when the
+     * final result must have been delivered before continuing.
+     */
     public void flush() {
         AprilAsrNative.aas_flush(this.handle);
+    }
+
+    /**
+     * Wait for queued asynchronous work and callbacks to finish, including
+     * the final results of every queued flush. Returns immediately for
+     * synchronous sessions.
+     *
+     * @throws IllegalStateException if called from this session's callback,
+     *         which would deadlock
+     */
+    public void waitIdle() {
+        if (AprilAsrNative.aas_wait(this.handle) == 0) {
+            throw new IllegalStateException("Cannot wait for a session from its own callback");
+        }
     }
 }
